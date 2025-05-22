@@ -1,0 +1,77 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+export default function Navbar() {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    
+    try {
+      // First clear any client-side state before calling the API
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      
+      if (response.ok) {
+        // Force a hard reload to the login page
+        window.location.href = '/auth/login';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, still redirect
+      window.location.href = '/auth/login';
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+  
+  return (
+    <nav className="bg-blue-700 text-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link href="/dashboard" className="text-xl font-bold">
+              Seller Admin
+            </Link>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Link 
+              href="/dashboard" 
+              className="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800"
+            >
+              Dashboard
+            </Link>
+            
+            <Link 
+              href="/dashboard/sellers" 
+              className="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800"
+            >
+              Sellers
+            </Link>
+            
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700"
+            >
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+} 
