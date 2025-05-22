@@ -1,9 +1,0 @@
-{
-  "/api/seed/sellers/route": "app/api/seed/sellers/route.js",
-  "/api/sellers/route": "app/api/sellers/route.js",
-  "/api/sellers/[id]/route": "app/api/sellers/[id]/route.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/sellers/page": "app/dashboard/sellers/page.js",
-  "/dashboard/sellers/[id]/page": "app/dashboard/sellers/[id]/page.js",
-  "/dashboard/sellers/[id]/edit/page": "app/dashboard/sellers/[id]/edit/page.js"
-}
