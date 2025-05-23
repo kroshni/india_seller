@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
+import Sidebar from '@/components/layout/Sidebar';
 
 export default function DashboardLayout({
   children,
@@ -12,6 +13,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   useEffect(() => {
     // Check if user is authenticated by making a request to a protected route
@@ -69,13 +71,22 @@ export default function DashboardLayout({
       </div>
     );
   }
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
   
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {children}
-      </main>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Navbar toggleSidebar={toggleSidebar} />
+      <div className="flex flex-1 overflow-hidden">
+        {isSidebarOpen && <Sidebar />}
+        <main className={`flex-1 p-6 overflow-auto`}>
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 } 
