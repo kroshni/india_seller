@@ -296,11 +296,14 @@ async function shutdownClient() {
 var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({
+    "bulkDeleteSellers": (()=>bulkDeleteSellers),
+    "bulkUpdateSellers": (()=>bulkUpdateSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
     "getAllSellers": (()=>getAllSellers),
     "getSellerById": (()=>getSellerById),
     "updateSeller": (()=>updateSeller),
+    "updateSellerBusiness": (()=>updateSellerBusiness),
     "updateSellerKycStatus": (()=>updateSellerKycStatus),
     "updateSellerStatus": (()=>updateSellerStatus),
     "updateSellerTopScorer": (()=>updateSellerTopScorer)
@@ -311,26 +314,71 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d
 ;
 ;
 ;
-async function getAllSellers() {
+async function getAllSellers(filters = {}) {
     try {
         const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
-        const query = 'SELECT * FROM sellers';
+        const limit = filters.limit || 10;
+        const page = filters.page || 1;
+        const offset = (page - 1) * limit;
+        // Build query based on filters
+        let query = 'SELECT * FROM sellers';
+        const countQuery = 'SELECT COUNT(*) FROM sellers';
+        // In Cassandra, filtering requires a secondary index or ALLOW FILTERING
+        // For simplicity, we'll fetch all and filter in-memory, but in production
+        // you'd want to use a secondary index or a search service
         const result = await client.execute(query);
-        return result.rows.map((row)=>({
+        const countResult = await client.execute(countQuery);
+        let sellers = result.rows.map((row)=>({
                 id: row.id.toString(),
                 name: row.name,
                 email: row.email,
                 phone: row.phone,
                 profilePicture: row.profile_picture,
-                isTopScorer: row.is_top_scorer,
+                isTopScorer: row.is_top_scorer !== null ? row.is_top_scorer : 0,
                 kycStatus: row.kyc_status,
                 status: row.status,
                 createdAt: row.created_at,
                 updatedAt: row.updated_at
             }));
+        // Apply filters in memory
+        if (filters.search) {
+            const search = filters.search.toLowerCase();
+            sellers = sellers.filter((seller)=>seller.name.toLowerCase().includes(search) || seller.email.toLowerCase().includes(search) || seller.phone.toLowerCase().includes(search));
+        }
+        if (filters.status && filters.status !== 'All') {
+            sellers = sellers.filter((seller)=>seller.status === filters.status);
+        }
+        if (filters.kycStatus && filters.kycStatus !== 'All') {
+            sellers = sellers.filter((seller)=>seller.kycStatus === filters.kycStatus);
+        }
+        if (filters.minTopScorer !== undefined) {
+            sellers = sellers.filter((seller)=>seller.isTopScorer >= filters.minTopScorer);
+        }
+        if (filters.maxTopScorer !== undefined) {
+            sellers = sellers.filter((seller)=>seller.isTopScorer <= filters.maxTopScorer);
+        }
+        // Apply sorting
+        if (filters.sortBy) {
+            const sortOrder = filters.sortOrder === 'desc' ? -1 : 1;
+            sellers.sort((a, b)=>{
+                if (a[filters.sortBy] < b[filters.sortBy]) return -1 * sortOrder;
+                if (a[filters.sortBy] > b[filters.sortBy]) return 1 * sortOrder;
+                return 0;
+            });
+        }
+        const total = sellers.length;
+        // Apply pagination
+        sellers = sellers.slice(offset, offset + limit);
+        return {
+            sellers,
+            total
+        };
     } catch (error) {
         console.error('Error getting sellers:', error);
-        return [];
+        return {
+            sellers: [],
+            total: 0
+        };
     }
 }
 async function getSellerById(id) {
@@ -353,7 +401,7 @@ async function getSellerById(id) {
             email: sellerRow.email,
             phone: sellerRow.phone,
             profilePicture: sellerRow.profile_picture,
-            isTopScorer: sellerRow.is_top_scorer,
+            isTopScorer: sellerRow.is_top_scorer !== null ? sellerRow.is_top_scorer : 0,
             kycStatus: sellerRow.kyc_status,
             status: sellerRow.status,
             createdAt: sellerRow.created_at,
@@ -372,7 +420,6 @@ async function getSellerById(id) {
             business = {
                 sellerId: businessRow.seller_id.toString(),
                 companyName: businessRow.company_name,
-                address: businessRow.address,
                 gstin: businessRow.gstin,
                 pan: businessRow.pan,
                 bankName: businessRow.bank_name,
@@ -380,7 +427,27 @@ async function getSellerById(id) {
                 ifscCode: businessRow.ifsc_code
             };
         }
-        // Get products
+        // Get addresses - We have an index, so no need for ALLOW FILTERING
+        const addressesQuery = 'SELECT * FROM seller_addresses WHERE seller_id = ?';
+        const addressesResult = await client.execute(addressesQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+        ], {
+            prepare: true
+        });
+        const addresses = addressesResult.rows.map((row)=>({
+                id: row.id.toString(),
+                sellerId: row.seller_id.toString(),
+                addressType: row.address_type,
+                addressLine1: row.address_line1,
+                addressLine2: row.address_line2,
+                city: row.city,
+                state: row.state,
+                postalCode: row.postal_code,
+                country: row.country,
+                isDefault: row.is_default,
+                image: row.image
+            }));
+        // Get products - now using the secondary index, so no need for ALLOW FILTERING
         const productsQuery = 'SELECT * FROM seller_products WHERE seller_id = ?';
         const productsResult = await client.execute(productsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -388,11 +455,12 @@ async function getSellerById(id) {
             prepare: true
         });
         const products = productsResult.rows.map((row)=>({
+                id: row.id.toString(),
                 sellerId: row.seller_id.toString(),
                 productName: row.product_name,
                 category: row.category
             }));
-        // Get documents
+        // Get documents - We have an index, so no need for ALLOW FILTERING
         const documentsQuery = 'SELECT * FROM seller_documents WHERE seller_id = ?';
         const documentsResult = await client.execute(documentsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -400,16 +468,33 @@ async function getSellerById(id) {
             prepare: true
         });
         const documents = documentsResult.rows.map((row)=>({
+                id: row.id ? row.id.toString() : (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])(),
                 sellerId: row.seller_id.toString(),
                 documentType: row.document_type,
                 documentUrl: row.document_url,
                 uploadedAt: row.uploaded_at
             }));
+        // Get gallery images - We have an index, so no need for ALLOW FILTERING
+        const galleryQuery = 'SELECT * FROM seller_gallery WHERE seller_id = ?';
+        const galleryResult = await client.execute(galleryQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+        ], {
+            prepare: true
+        });
+        const gallery = galleryResult.rows.map((row)=>({
+                id: row.id.toString(),
+                sellerId: row.seller_id.toString(),
+                imageUrl: row.image_url,
+                caption: row.caption,
+                uploadedAt: row.uploaded_at
+            }));
         return {
             seller,
             business: business,
+            addresses,
             products,
-            documents
+            documents,
+            gallery
         };
     } catch (error) {
         console.error('Error getting seller by ID:', error);
@@ -434,7 +519,7 @@ async function createSeller(input) {
             input.email,
             input.phone,
             input.profilePicture || null,
-            false,
+            0,
             'Pending',
             'Active',
             now,
@@ -445,14 +530,13 @@ async function createSeller(input) {
         // Insert business details
         const businessQuery = `
       INSERT INTO seller_business (
-        seller_id, company_name, address, gstin, pan, bank_name, account_number, ifsc_code
+        seller_id, company_name, gstin, pan, bank_name, account_number, ifsc_code
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
         await client.execute(businessQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
             input.business.companyName,
-            input.business.address,
             input.business.gstin,
             input.business.pan,
             input.business.bankName,
@@ -461,15 +545,45 @@ async function createSeller(input) {
         ], {
             prepare: true
         });
+        // Insert addresses
+        if (input.addresses && input.addresses.length > 0) {
+            const addressQuery = `
+        INSERT INTO seller_addresses (
+          id, seller_id, address_type, address_line1, address_line2, 
+          city, state, postal_code, country, is_default, image
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+            for (const address of input.addresses){
+                const addressId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                await client.execute(addressQuery, [
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(addressId),
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                    address.addressType,
+                    address.addressLine1,
+                    address.addressLine2 || null,
+                    address.city,
+                    address.state,
+                    address.postalCode,
+                    address.country,
+                    address.isDefault,
+                    address.image || null
+                ], {
+                    prepare: true
+                });
+            }
+        }
         // Insert products
         const productQuery = `
       INSERT INTO seller_products (
-        seller_id, product_name, category
+        id, seller_id, product_name, category
       )
-      VALUES (?, ?, ?)
+      VALUES (?, ?, ?, ?)
     `;
         for (const product of input.products){
+            const productId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
             await client.execute(productQuery, [
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(productId),
                 __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
                 product.productName,
                 product.category
@@ -480,12 +594,14 @@ async function createSeller(input) {
         // Insert documents
         const documentQuery = `
       INSERT INTO seller_documents (
-        seller_id, document_type, document_url, uploaded_at
+        id, seller_id, document_type, document_url, uploaded_at
       )
-      VALUES (?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
     `;
         for (const document of input.documents){
+            const documentId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
             await client.execute(documentQuery, [
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(documentId),
                 __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
                 document.documentType,
                 document.documentUrl,
@@ -493,6 +609,27 @@ async function createSeller(input) {
             ], {
                 prepare: true
             });
+        }
+        // Insert gallery images
+        if (input.gallery && input.gallery.length > 0) {
+            const galleryQuery = `
+        INSERT INTO seller_gallery (
+          id, seller_id, image_url, caption, uploaded_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+      `;
+            for (const image of input.gallery){
+                const imageId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                await client.execute(galleryQuery, [
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(imageId),
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                    image.imageUrl,
+                    image.caption || null,
+                    now
+                ], {
+                    prepare: true
+                });
+            }
         }
         return sellerId;
     } catch (error) {
@@ -540,10 +677,6 @@ async function updateSeller(id, input) {
                 updateFields.push('company_name = ?');
                 updateValues.push(input.business.companyName);
             }
-            if (input.business.address) {
-                updateFields.push('address = ?');
-                updateValues.push(input.business.address);
-            }
             if (input.business.gstin) {
                 updateFields.push('gstin = ?');
                 updateValues.push(input.business.gstin);
@@ -572,19 +705,79 @@ async function updateSeller(id, input) {
                 });
             }
         }
-        // Update products if provided
-        if (input.products && input.products.length > 0) {
-            // Delete existing products
-            const deleteProductsQuery = 'DELETE FROM seller_products WHERE seller_id = ?';
-            await client.execute(deleteProductsQuery, [
+        // Update addresses if provided
+        if (input.addresses && input.addresses.length > 0) {
+            // First retrieve existing addresses to get their IDs
+            const getAddressesQuery = 'SELECT id FROM seller_addresses WHERE seller_id = ?';
+            const addressesResult = await client.execute(getAddressesQuery, [
                 __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
             ], {
                 prepare: true
             });
+            // Delete existing addresses one by one using their IDs
+            for (const row of addressesResult.rows){
+                const addressId = row.id;
+                const deleteAddressQuery = 'DELETE FROM seller_addresses WHERE id = ? AND seller_id = ?';
+                await client.execute(deleteAddressQuery, [
+                    addressId,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
+            // Insert new addresses
+            const addressQuery = `
+        INSERT INTO seller_addresses (
+          id, seller_id, address_type, address_line1, address_line2, 
+          city, state, postal_code, country, is_default, image
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+            for (const address of input.addresses){
+                const addressId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                await client.execute(addressQuery, [
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(addressId),
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
+                    address.addressType,
+                    address.addressLine1,
+                    address.addressLine2 || null,
+                    address.city,
+                    address.state,
+                    address.postalCode,
+                    address.country,
+                    address.isDefault,
+                    address.image || null
+                ], {
+                    prepare: true
+                });
+            }
+        }
+        // Update products if provided
+        if (input.products && input.products.length > 0) {
+            // First retrieve existing products to get their IDs
+            const getProductsQuery = 'SELECT id FROM seller_products WHERE seller_id = ?';
+            const productsResult = await client.execute(getProductsQuery, [
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+            // Delete existing products one by one using their IDs
+            for (const row of productsResult.rows){
+                const productId = row.id;
+                const deleteProductQuery = 'DELETE FROM seller_products WHERE id = ? AND seller_id = ?';
+                await client.execute(deleteProductQuery, [
+                    productId,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
             // Insert new products
-            const productQuery = 'INSERT INTO seller_products (seller_id, product_name, category) VALUES (?, ?, ?)';
+            const productQuery = 'INSERT INTO seller_products (id, seller_id, product_name, category) VALUES (?, ?, ?, ?)';
             for (const product of input.products){
+                const productId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
                 await client.execute(productQuery, [
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(productId),
                     __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
                     product.productName,
                     product.category
@@ -595,10 +788,10 @@ async function updateSeller(id, input) {
         }
         // Update documents if provided
         if (input.documents && input.documents.length > 0) {
-            const documentQuery = 'INSERT INTO seller_documents (seller_id, document_type, document_url, uploaded_at) VALUES (?, ?, ?, ?)';
+            const documentQuery = 'INSERT INTO seller_documents (id, seller_id, document_type, document_url, uploaded_at) VALUES (?, ?, ?, ?, ?)';
             for (const document of input.documents){
                 // Check if document of this type already exists
-                const checkQuery = 'SELECT document_type FROM seller_documents WHERE seller_id = ? AND document_type = ?';
+                const checkQuery = 'SELECT id, document_type FROM seller_documents WHERE seller_id = ? AND document_type = ? ALLOW FILTERING';
                 const checkResult = await client.execute(checkQuery, [
                     __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
                     document.documentType
@@ -607,10 +800,12 @@ async function updateSeller(id, input) {
                 });
                 if (checkResult.rowLength > 0) {
                     // Update existing document
-                    const updateDocQuery = 'UPDATE seller_documents SET document_url = ?, uploaded_at = ? WHERE seller_id = ? AND document_type = ?';
+                    const existingDoc = checkResult.first();
+                    const updateDocQuery = 'UPDATE seller_documents SET document_url = ?, uploaded_at = ? WHERE id = ? AND seller_id = ? AND document_type = ?';
                     await client.execute(updateDocQuery, [
                         document.documentUrl,
                         now,
+                        existingDoc.id,
                         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
                         document.documentType
                     ], {
@@ -618,7 +813,9 @@ async function updateSeller(id, input) {
                     });
                 } else {
                     // Insert new document
+                    const documentId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
                     await client.execute(documentQuery, [
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(documentId),
                         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
                         document.documentType,
                         document.documentUrl,
@@ -629,27 +826,145 @@ async function updateSeller(id, input) {
                 }
             }
         }
+        // Update gallery if provided
+        if (input.gallery && input.gallery.length > 0) {
+            // First retrieve existing gallery items to get their IDs
+            const getGalleryQuery = 'SELECT id FROM seller_gallery WHERE seller_id = ?';
+            const galleryResult = await client.execute(getGalleryQuery, [
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+            // Delete existing gallery items one by one using their IDs
+            for (const row of galleryResult.rows){
+                const imageId = row.id;
+                const deleteGalleryQuery = 'DELETE FROM seller_gallery WHERE id = ? AND seller_id = ?';
+                await client.execute(deleteGalleryQuery, [
+                    imageId,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
+            // Insert new gallery images
+            const galleryQuery = `
+        INSERT INTO seller_gallery (
+          id, seller_id, image_url, caption, uploaded_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+      `;
+            for (const image of input.gallery){
+                const imageId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                await client.execute(galleryQuery, [
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(imageId),
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id),
+                    image.imageUrl,
+                    image.caption || null,
+                    now
+                ], {
+                    prepare: true
+                });
+            }
+        }
         return true;
     } catch (error) {
         console.error('Error updating seller:', error);
         return false;
     }
 }
+async function updateSellerBusiness(id, businessData) {
+    try {
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        const updateFields = [];
+        const updateValues = [];
+        Object.entries(businessData).forEach(([key, value])=>{
+            if (key !== 'sellerId' && value !== undefined) {
+                // Convert camelCase to snake_case for DB field names
+                const fieldName = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+                updateFields.push(`${fieldName} = ?`);
+                updateValues.push(value);
+            }
+        });
+        if (updateFields.length > 0) {
+            const businessQuery = `UPDATE seller_business SET ${updateFields.join(', ')} WHERE seller_id = ?`;
+            updateValues.push(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id));
+            await client.execute(businessQuery, updateValues, {
+                prepare: true
+            });
+        }
+        return true;
+    } catch (error) {
+        console.error('Error updating seller business:', error);
+        return false;
+    }
+}
 async function deleteSeller(id) {
     try {
         const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
-        // Delete from seller_documents
-        await client.execute('DELETE FROM seller_documents WHERE seller_id = ?', [
+        // Get IDs of documents to delete them properly
+        const documentIdsQuery = 'SELECT id FROM seller_documents WHERE seller_id = ?';
+        const documentsResult = await client.execute(documentIdsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
         ], {
             prepare: true
         });
-        // Delete from seller_products
-        await client.execute('DELETE FROM seller_products WHERE seller_id = ?', [
+        // Delete documents one by one
+        for (const row of documentsResult.rows){
+            await client.execute('DELETE FROM seller_documents WHERE id = ? AND seller_id = ?', [
+                row.id,
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+        }
+        // Get IDs of products to delete them properly
+        const productIdsQuery = 'SELECT id FROM seller_products WHERE seller_id = ?';
+        const productsResult = await client.execute(productIdsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
         ], {
             prepare: true
         });
+        // Delete products one by one
+        for (const row of productsResult.rows){
+            await client.execute('DELETE FROM seller_products WHERE id = ? AND seller_id = ?', [
+                row.id,
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+        }
+        // Get IDs of addresses to delete them properly
+        const addressIdsQuery = 'SELECT id FROM seller_addresses WHERE seller_id = ?';
+        const addressesResult = await client.execute(addressIdsQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+        ], {
+            prepare: true
+        });
+        // Delete addresses one by one
+        for (const row of addressesResult.rows){
+            await client.execute('DELETE FROM seller_addresses WHERE id = ? AND seller_id = ?', [
+                row.id,
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+        }
+        // Get IDs of gallery items to delete them properly
+        const galleryIdsQuery = 'SELECT id FROM seller_gallery WHERE seller_id = ?';
+        const galleryResult = await client.execute(galleryIdsQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+        ], {
+            prepare: true
+        });
+        // Delete gallery items one by one
+        for (const row of galleryResult.rows){
+            await client.execute('DELETE FROM seller_gallery WHERE id = ? AND seller_id = ?', [
+                row.id,
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+            ], {
+                prepare: true
+            });
+        }
         // Delete from seller_business
         await client.execute('DELETE FROM seller_business WHERE seller_id = ?', [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -704,13 +1019,15 @@ async function updateSellerKycStatus(id, kycStatus) {
         return false;
     }
 }
-async function updateSellerTopScorer(id, isTopScorer) {
+async function updateSellerTopScorer(id, topScorerPercentage) {
     try {
         const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
         const now = new Date();
+        // Ensure percentage is between 0 and 100
+        const normalizedPercentage = Math.max(0, Math.min(100, topScorerPercentage));
         const query = 'UPDATE sellers SET is_top_scorer = ?, updated_at = ? WHERE id = ?';
         await client.execute(query, [
-            isTopScorer,
+            normalizedPercentage,
             now,
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
         ], {
@@ -718,7 +1035,63 @@ async function updateSellerTopScorer(id, isTopScorer) {
         });
         return true;
     } catch (error) {
-        console.error('Error updating seller top scorer status:', error);
+        console.error('Error updating seller top scorer percentage:', error);
+        return false;
+    }
+}
+async function bulkUpdateSellers(input) {
+    try {
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        const now = new Date();
+        for (const id of input.sellerIds){
+            // Update status if provided
+            if (input.status) {
+                await client.execute('UPDATE sellers SET status = ?, updated_at = ? WHERE id = ?', [
+                    input.status,
+                    now,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
+            // Update KYC status if provided
+            if (input.kycStatus) {
+                await client.execute('UPDATE sellers SET kyc_status = ?, updated_at = ? WHERE id = ?', [
+                    input.kycStatus,
+                    now,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
+            // Update top scorer percentage if provided
+            if (input.isTopScorer !== undefined) {
+                // Ensure percentage is between 0 and 100
+                const normalizedPercentage = Math.max(0, Math.min(100, input.isTopScorer));
+                await client.execute('UPDATE sellers SET is_top_scorer = ?, updated_at = ? WHERE id = ?', [
+                    normalizedPercentage,
+                    now,
+                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
+                ], {
+                    prepare: true
+                });
+            }
+        }
+        return true;
+    } catch (error) {
+        console.error('Error performing bulk update on sellers:', error);
+        return false;
+    }
+}
+async function bulkDeleteSellers(sellerIds) {
+    try {
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        for (const id of sellerIds){
+            await deleteSeller(id);
+        }
+        return true;
+    } catch (error) {
+        console.error('Error performing bulk delete on sellers:', error);
         return false;
     }
 }
@@ -737,7 +1110,9 @@ module.exports = mod;
 var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({
+    "DELETE": (()=>DELETE),
     "GET": (()=>GET),
+    "PATCH": (()=>PATCH),
     "POST": (()=>POST)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
@@ -761,24 +1136,52 @@ const authenticateRequest = async (request)=>{
 };
 async function GET(request) {
     try {
-        const user = await authenticateRequest(request);
-        if (!user) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                message: 'Unauthorized'
-            }, {
-                status: 401
-            });
+        // Parse query parameters for filtering, pagination, and sorting
+        const searchParams = request.nextUrl.searchParams;
+        const filters = {
+            search: searchParams.get('search') || undefined,
+            page: searchParams.get('page') ? parseInt(searchParams.get('page')) : 1,
+            limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')) : 10,
+            sortBy: searchParams.get('sortBy') || undefined,
+            sortOrder: searchParams.get('sortOrder') || 'asc'
+        };
+        // Status filter
+        if (searchParams.has('status')) {
+            const status = searchParams.get('status');
+            if (status === 'Active' || status === 'Inactive' || status === 'All') {
+                filters.status = status;
+            }
         }
-        const sellers = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getAllSellers"])();
+        // KYC status filter
+        if (searchParams.has('kycStatus')) {
+            const kycStatus = searchParams.get('kycStatus');
+            if (kycStatus === 'Verified' || kycStatus === 'Pending' || kycStatus === 'All') {
+                filters.kycStatus = kycStatus;
+            }
+        }
+        // Top scorer range filter
+        if (searchParams.has('minTopScorer')) {
+            filters.minTopScorer = parseInt(searchParams.get('minTopScorer'));
+        }
+        if (searchParams.has('maxTopScorer')) {
+            filters.maxTopScorer = parseInt(searchParams.get('maxTopScorer'));
+        }
+        const { sellers, total } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getAllSellers"])(filters);
+        // Calculate pagination data
+        const totalPages = Math.ceil(total / filters.limit);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            sellers
-        }, {
-            status: 200
+            sellers,
+            pagination: {
+                total,
+                currentPage: filters.page,
+                totalPages,
+                limit: filters.limit
+            }
         });
     } catch (error) {
-        console.error('Get sellers error:', error);
+        console.error('Error getting sellers:', error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: 'Internal server error'
+            error: 'Failed to fetch sellers'
         }, {
             status: 500
         });
@@ -786,48 +1189,111 @@ async function GET(request) {
 }
 async function POST(request) {
     try {
-        const user = await authenticateRequest(request);
-        if (!user) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                message: 'Unauthorized'
-            }, {
-                status: 401
-            });
-        }
-        const body = await request.json();
+        const data = await request.json();
         // Basic validation
-        if (!body.name || !body.email || !body.phone) {
+        if (!data.name || !data.email || !data.phone) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                message: 'Name, email, and phone are required'
+                error: 'Name, email, and phone are required'
             }, {
                 status: 400
             });
         }
-        if (!body.business || !body.business.companyName) {
+        if (!data.business || !data.business.companyName) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                message: 'Business details are required'
+                error: 'Business company name is required'
             }, {
                 status: 400
             });
         }
-        const sellerId = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createSeller"])(body);
+        const sellerId = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createSeller"])(data);
         if (!sellerId) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                message: 'Failed to create seller'
+                error: 'Failed to create seller'
             }, {
                 status: 500
             });
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: 'Seller created successfully',
-            sellerId
+            success: true,
+            sellerId,
+            message: 'Seller created successfully'
         }, {
             status: 201
         });
     } catch (error) {
-        console.error('Create seller error:', error);
+        console.error('Error creating seller:', error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: 'Internal server error'
+            error: 'Failed to create seller'
+        }, {
+            status: 500
+        });
+    }
+}
+async function PATCH(request) {
+    try {
+        const data = await request.json();
+        if (!data.sellerIds || !Array.isArray(data.sellerIds) || data.sellerIds.length === 0) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: 'sellerIds array is required and cannot be empty'
+            }, {
+                status: 400
+            });
+        }
+        // Make sure at least one update field is provided
+        if (data.status === undefined && data.kycStatus === undefined && data.isTopScorer === undefined) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: 'At least one of status, kycStatus, or isTopScorer must be provided'
+            }, {
+                status: 400
+            });
+        }
+        const success = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["bulkUpdateSellers"])(data);
+        if (!success) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: 'Failed to update sellers'
+            }, {
+                status: 500
+            });
+        }
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            success: true,
+            message: 'Sellers updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating sellers:', error);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: 'Failed to update sellers'
+        }, {
+            status: 500
+        });
+    }
+}
+async function DELETE(request) {
+    try {
+        const data = await request.json();
+        if (!data.sellerIds || !Array.isArray(data.sellerIds) || data.sellerIds.length === 0) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: 'sellerIds array is required and cannot be empty'
+            }, {
+                status: 400
+            });
+        }
+        const success = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["bulkDeleteSellers"])(data.sellerIds);
+        if (!success) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: 'Failed to delete sellers'
+            }, {
+                status: 500
+            });
+        }
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            success: true,
+            message: 'Sellers deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting sellers:', error);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: 'Failed to delete sellers'
         }, {
             status: 500
         });

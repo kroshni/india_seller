@@ -21,19 +21,20 @@ export default function Navbar() {
         headers: {
           'Content-Type': 'application/json',
         },
-        cache: 'no-store',
+        credentials: 'include',
       });
       
       if (response.ok) {
         // Force a hard reload to the login page
-        window.location.href = '/auth/login';
+        window.location.replace('/auth/login');
+      } else {
+        // If the logout API fails, still try to redirect
+        window.location.replace('/auth/login');
       }
     } catch (error) {
       console.error('Logout error:', error);
       // Even if there's an error, still redirect
-      window.location.href = '/auth/login';
-    } finally {
-      setIsLoggingOut(false);
+      window.location.replace('/auth/login');
     }
   };
   
@@ -65,7 +66,7 @@ export default function Navbar() {
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700"
+              className="px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700 disabled:bg-red-400"
             >
               {isLoggingOut ? 'Logging out...' : 'Logout'}
             </button>

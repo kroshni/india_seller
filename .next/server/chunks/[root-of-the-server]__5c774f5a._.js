@@ -62,65 +62,46 @@ __turbopack_context__.s({
     "POST": (()=>POST)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/headers.js [app-route] (ecmascript)");
 ;
-async function POST(request) {
+;
+async function POST() {
     try {
+        const cookieStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cookies"])();
+        // Clear all authentication cookies
+        cookieStore.delete('token');
+        cookieStore.delete('refresh_token');
+        cookieStore.delete('session_id');
+        cookieStore.delete('user_id');
+        cookieStore.delete('auth-token');
+        // Clear with different paths to ensure all cookies are removed
+        cookieStore.delete({
+            name: 'token',
+            path: '/'
+        });
+        cookieStore.delete({
+            name: 'auth-token',
+            path: '/'
+        });
+        cookieStore.delete({
+            name: 'session_id',
+            path: '/'
+        });
+        // Create response with proper cache headers
         const response = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             message: 'Logged out successfully'
         }, {
             status: 200
         });
-        // Clear cookies with various configurations to ensure removal
-        // 1. Standard clearing with path /
-        response.cookies.set({
-            name: 'auth-token',
-            value: '',
-            httpOnly: true,
-            secure: ("TURBOPACK compile-time value", "development") === 'production',
-            sameSite: 'strict',
-            maxAge: 0,
-            path: '/'
-        });
-        // 2. Clear with path /dashboard
-        response.cookies.set({
-            name: 'auth-token',
-            value: '',
-            httpOnly: true,
-            secure: ("TURBOPACK compile-time value", "development") === 'production',
-            sameSite: 'strict',
-            maxAge: 0,
-            path: '/dashboard'
-        });
-        // 3. Clear with path /api
-        response.cookies.set({
-            name: 'auth-token',
-            value: '',
-            httpOnly: true,
-            secure: ("TURBOPACK compile-time value", "development") === 'production',
-            sameSite: 'lax',
-            maxAge: 0,
-            path: '/api'
-        });
-        // 4. Clear with different security settings
-        response.cookies.set({
-            name: 'auth-token',
-            value: '',
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 0,
-            path: '/'
-        });
-        // Set aggressive cache control headers
-        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        // Set cache control headers to prevent caching
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         response.headers.set('Pragma', 'no-cache');
         response.headers.set('Expires', '0');
-        response.headers.set('Surrogate-Control', 'no-store');
         return response;
     } catch (error) {
         console.error('Logout error:', error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: 'Internal server error'
+            message: 'Failed to logout'
         }, {
             status: 500
         });
