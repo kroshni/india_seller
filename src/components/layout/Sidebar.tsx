@@ -63,6 +63,11 @@ export default function Sidebar() {
 
   // Icons using simple SVG for each menu item
   const icons = {
+    home: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+      </svg>
+    ),
     dashboard: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
@@ -167,7 +172,16 @@ export default function Sidebar() {
         </Link>
       </div>
       
-      <nav className="space-y-1">
+      <div className="space-y-1">
+        <SidebarItem 
+          href="/" 
+          title="Home" 
+          icon={icons.home}
+          isActive={isActive('/')}
+          checkActive={isActive}
+          children={[]}
+        />
+        
         <SidebarItem 
           href="/dashboard" 
           title="Dashboard" 
@@ -228,14 +242,14 @@ export default function Sidebar() {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <button
             onClick={handleLogout}
+            className="flex items-center px-3 py-2 w-full rounded-md text-gray-700 hover:bg-gray-100"
             disabled={isLoggingOut}
-            className="w-full flex items-center px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100"
           >
             <span className="mr-3">{icons.logout}</span>
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
-      </nav>
+      </div>
     </div>
   );
 } 
