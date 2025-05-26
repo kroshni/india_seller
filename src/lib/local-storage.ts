@@ -1,10 +1,11 @@
 // Simple local storage implementation for categories and brands
 // This is a fallback solution when Cassandra database is not available
 
-import { Category, Brand } from './cassandra';
+import { Category, Brand, Product } from './cassandra';
 
 const CATEGORIES_STORAGE_KEY = 'india_seller_categories';
 const BRANDS_STORAGE_KEY = 'india_seller_brands';
+const PRODUCTS_STORAGE_KEY = 'india_seller_products';
 
 // ====== CATEGORIES ======
 
@@ -197,5 +198,163 @@ export function deleteBrandFromStorage(id: string): boolean {
   } catch (error) {
     console.error('Error deleting brand in localStorage:', error);
     return false;
+  }
+}
+
+// ====== PRODUCTS ======
+
+// Save products to localStorage
+export function saveProducts(products: Product[]): void {
+  // Only run in browser
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+    console.log('Products saved to localStorage:', products.length);
+  } catch (error) {
+    console.error('Failed to save products to localStorage:', error);
+  }
+}
+
+// Load products from localStorage
+export function loadProducts(): Product[] {
+  // Only run in browser
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const data = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+    if (!data) return [];
+    
+    const products = JSON.parse(data) as Product[];
+    console.log('Products loaded from localStorage:', products.length);
+    return products;
+  } catch (error) {
+    console.error('Failed to load products from localStorage:', error);
+    return [];
+  }
+}
+
+// Add a new product to localStorage
+export function addProduct(product: Product): void {
+  const products = loadProducts();
+  products.push(product);
+  saveProducts(products);
+  console.log('Product added to localStorage:', product.name);
+}
+
+// Update a product in localStorage
+export function updateProductInStorage(id: string, updatedProduct: Partial<Product>): boolean {
+  try {
+    const products = loadProducts();
+    const index = products.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      console.error('Product not found in localStorage, cannot update:', id);
+      return false;
+    }
+    
+    // Create the updated product by merging existing with updates
+    const updated = {
+      ...products[index],
+      ...updatedProduct,
+      updatedAt: new Date().toISOString() // Always update the timestamp
+    };
+    
+    // Replace the product in the array
+    products[index] = updated;
+    
+    // Save back to localStorage
+    saveProducts(products);
+    console.log('Product updated in localStorage:', updated.name);
+    return true;
+  } catch (error) {
+    console.error('Error updating product in localStorage:', error);
+    return false;
+  }
+}
+
+// Delete a product from localStorage
+export function deleteProductFromStorage(id: string): boolean {
+  try {
+    const products = loadProducts();
+    const index = products.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      console.error('Product not found in localStorage, cannot delete:', id);
+      return false;
+    }
+    
+    // Remove the product from the array
+    const name = products[index].name;
+    products.splice(index, 1);
+    
+    // Save back to localStorage
+    saveProducts(products);
+    console.log('Product deleted from localStorage:', name);
+    return true;
+  } catch (error) {
+    console.error('Error deleting product in localStorage:', error);
+    return false;
+  }
+}
+
+// Delete multiple products from localStorage
+export function deleteBulkProductsFromStorage(ids: string[]): { success: boolean; count: number } {
+  try {
+    let products = loadProducts();
+    const initialCount = products.length;
+    
+    // Filter out products with IDs in the deletion list
+    products = products.filter(p => !ids.includes(p.id));
+    
+    // Calculate how many were actually deleted
+    const deletedCount = initialCount - products.length;
+    
+    // Save back to localStorage
+    saveProducts(products);
+    console.log(`Deleted ${deletedCount} products from localStorage`);
+    
+    return { 
+      success: true, 
+      count: deletedCount
+    };
+  } catch (error) {
+    console.error('Error bulk deleting products from localStorage:', error);
+    return { 
+      success: false, 
+      count: 0 
+    };
+  }
+}
+
+// Update multiple products' status in localStorage
+export function updateBulkProductStatusInStorage(ids: string[], status: 'Enabled' | 'Disabled'): { success: boolean; count: number } {
+  try {
+    const products = loadProducts();
+    let updatedCount = 0;
+    
+    // Update each product in the array
+    products.forEach(product => {
+      if (ids.includes(product.id)) {
+        product.status = status;
+        product.updatedAt = new Date().toISOString();
+        updatedCount++;
+      }
+    });
+    
+    // Save back to localStorage
+    saveProducts(products);
+    console.log(`Updated status for ${updatedCount} products in localStorage`);
+    
+    return { 
+      success: true, 
+      count: updatedCount 
+    };
+  } catch (error) {
+    console.error('Error bulk updating product status in localStorage:', error);
+    return { 
+      success: false, 
+      count: 0 
+    };
   }
 } 

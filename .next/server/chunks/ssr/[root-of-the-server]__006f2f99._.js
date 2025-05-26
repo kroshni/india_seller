@@ -275,6 +275,54 @@ async function initializeDatabase() {
         updated_at timestamp
       )
     `);
+        // Create products table
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS products (
+        id uuid PRIMARY KEY,
+        sku text,
+        name text,
+        slug text,
+        type text,
+        description text,
+        short_description text,
+        price decimal,
+        sale_price decimal,
+        sale_start_date timestamp,
+        sale_end_date timestamp,
+        stock_status text,
+        stock_quantity int,
+        manage_stock boolean,
+        weight decimal,
+        dimensions map<text, decimal>,
+        main_image text,
+        gallery_images list<text>,
+        category_ids list<uuid>,
+        tags list<text>,
+        brand_id uuid,
+        visibility text,
+        status text,
+        custom_attributes map<text, text>,
+        seller_id uuid,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
+        // Create product_categories table (for many-to-many relationship)
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_categories (
+        product_id uuid,
+        category_id uuid,
+        PRIMARY KEY (product_id, category_id)
+      )
+    `);
+        // Create product_tags table (for indexing and searching by tag)
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_tags (
+        tag text,
+        product_id uuid,
+        PRIMARY KEY (tag, product_id)
+      )
+    `);
         console.log('Database tables initialized successfully');
         return true;
     } catch (error) {

@@ -229,6 +229,54 @@ async function initializeDatabase() {
         updated_at timestamp
       )
     `);
+        // Create products table
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS products (
+        id uuid PRIMARY KEY,
+        sku text,
+        name text,
+        slug text,
+        type text,
+        description text,
+        short_description text,
+        price decimal,
+        sale_price decimal,
+        sale_start_date timestamp,
+        sale_end_date timestamp,
+        stock_status text,
+        stock_quantity int,
+        manage_stock boolean,
+        weight decimal,
+        dimensions map<text, decimal>,
+        main_image text,
+        gallery_images list<text>,
+        category_ids list<uuid>,
+        tags list<text>,
+        brand_id uuid,
+        visibility text,
+        status text,
+        custom_attributes map<text, text>,
+        seller_id uuid,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
+        // Create product_categories table (for many-to-many relationship)
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_categories (
+        product_id uuid,
+        category_id uuid,
+        PRIMARY KEY (product_id, category_id)
+      )
+    `);
+        // Create product_tags table (for indexing and searching by tag)
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_tags (
+        tag text,
+        product_id uuid,
+        PRIMARY KEY (tag, product_id)
+      )
+    `);
         console.log('Database tables initialized successfully');
         return true;
     } catch (error) {
@@ -265,17 +313,25 @@ var { g: global, __dirname } = __turbopack_context__;
 __turbopack_context__.s({
     "addBrand": (()=>addBrand),
     "addCategory": (()=>addCategory),
+    "addProduct": (()=>addProduct),
     "deleteBrandFromStorage": (()=>deleteBrandFromStorage),
+    "deleteBulkProductsFromStorage": (()=>deleteBulkProductsFromStorage),
     "deleteCategoryFromStorage": (()=>deleteCategoryFromStorage),
+    "deleteProductFromStorage": (()=>deleteProductFromStorage),
     "loadBrands": (()=>loadBrands),
     "loadCategories": (()=>loadCategories),
+    "loadProducts": (()=>loadProducts),
     "saveBrands": (()=>saveBrands),
     "saveCategories": (()=>saveCategories),
+    "saveProducts": (()=>saveProducts),
     "updateBrandInStorage": (()=>updateBrandInStorage),
-    "updateCategoryInStorage": (()=>updateCategoryInStorage)
+    "updateBulkProductStatusInStorage": (()=>updateBulkProductStatusInStorage),
+    "updateCategoryInStorage": (()=>updateCategoryInStorage),
+    "updateProductInStorage": (()=>updateProductInStorage)
 });
 const CATEGORIES_STORAGE_KEY = 'india_seller_categories';
 const BRANDS_STORAGE_KEY = 'india_seller_brands';
+const PRODUCTS_STORAGE_KEY = 'india_seller_products';
 function saveCategories(categories) {
     // Only run in browser
     if ("TURBOPACK compile-time truthy", 1) return;
@@ -396,6 +452,117 @@ function deleteBrandFromStorage(id) {
     } catch (error) {
         console.error('Error deleting brand in localStorage:', error);
         return false;
+    }
+}
+function saveProducts(products) {
+    // Only run in browser
+    if ("TURBOPACK compile-time truthy", 1) return;
+    "TURBOPACK unreachable";
+}
+function loadProducts() {
+    // Only run in browser
+    if ("TURBOPACK compile-time truthy", 1) return [];
+    "TURBOPACK unreachable";
+}
+function addProduct(product) {
+    const products = loadProducts();
+    products.push(product);
+    saveProducts(products);
+    console.log('Product added to localStorage:', product.name);
+}
+function updateProductInStorage(id, updatedProduct) {
+    try {
+        const products = loadProducts();
+        const index = products.findIndex((p)=>p.id === id);
+        if (index === -1) {
+            console.error('Product not found in localStorage, cannot update:', id);
+            return false;
+        }
+        // Create the updated product by merging existing with updates
+        const updated = {
+            ...products[index],
+            ...updatedProduct,
+            updatedAt: new Date().toISOString() // Always update the timestamp
+        };
+        // Replace the product in the array
+        products[index] = updated;
+        // Save back to localStorage
+        saveProducts(products);
+        console.log('Product updated in localStorage:', updated.name);
+        return true;
+    } catch (error) {
+        console.error('Error updating product in localStorage:', error);
+        return false;
+    }
+}
+function deleteProductFromStorage(id) {
+    try {
+        const products = loadProducts();
+        const index = products.findIndex((p)=>p.id === id);
+        if (index === -1) {
+            console.error('Product not found in localStorage, cannot delete:', id);
+            return false;
+        }
+        // Remove the product from the array
+        const name = products[index].name;
+        products.splice(index, 1);
+        // Save back to localStorage
+        saveProducts(products);
+        console.log('Product deleted from localStorage:', name);
+        return true;
+    } catch (error) {
+        console.error('Error deleting product in localStorage:', error);
+        return false;
+    }
+}
+function deleteBulkProductsFromStorage(ids) {
+    try {
+        let products = loadProducts();
+        const initialCount = products.length;
+        // Filter out products with IDs in the deletion list
+        products = products.filter((p)=>!ids.includes(p.id));
+        // Calculate how many were actually deleted
+        const deletedCount = initialCount - products.length;
+        // Save back to localStorage
+        saveProducts(products);
+        console.log(`Deleted ${deletedCount} products from localStorage`);
+        return {
+            success: true,
+            count: deletedCount
+        };
+    } catch (error) {
+        console.error('Error bulk deleting products from localStorage:', error);
+        return {
+            success: false,
+            count: 0
+        };
+    }
+}
+function updateBulkProductStatusInStorage(ids, status) {
+    try {
+        const products = loadProducts();
+        let updatedCount = 0;
+        // Update each product in the array
+        products.forEach((product)=>{
+            if (ids.includes(product.id)) {
+                product.status = status;
+                product.updatedAt = new Date().toISOString();
+                updatedCount++;
+            }
+        });
+        // Save back to localStorage
+        saveProducts(products);
+        console.log(`Updated status for ${updatedCount} products in localStorage`);
+        return {
+            success: true,
+            count: updatedCount
+        };
+    } catch (error) {
+        console.error('Error bulk updating product status in localStorage:', error);
+        return {
+            success: false,
+            count: 0
+        };
     }
 }
 }}),

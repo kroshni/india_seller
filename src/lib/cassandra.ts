@@ -25,6 +25,53 @@ export interface Brand {
   updatedAt: string;
 }
 
+// Product Interfaces
+export type ProductType = 'Simple' | 'Configurable' | 'Virtual' | 'Downloadable' | 'Grouped' | 'Bundled';
+export type ProductStatus = 'Enabled' | 'Disabled';
+export type StockStatus = 'In Stock' | 'Out of Stock' | 'On Backorder';
+export type Visibility = 'Store' | 'Search' | 'Both' | 'None';
+
+export interface ProductDimensions {
+  length: number;
+  width: number;
+  height: number;
+}
+
+export interface CustomAttribute {
+  name: string;
+  value: string;
+}
+
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  slug: string;
+  type: ProductType;
+  description: string;
+  shortDescription: string;
+  price: number;
+  salePrice?: number;
+  saleStartDate?: string;
+  saleEndDate?: string;
+  stockStatus: StockStatus;
+  stockQuantity?: number;
+  manageStock: boolean;
+  weight?: number;
+  dimensions?: ProductDimensions;
+  mainImage?: string;
+  galleryImages?: string[];
+  categoryIds: string[];
+  tags?: string[];
+  brandId?: string;
+  visibility: Visibility;
+  status: ProductStatus;
+  customAttributes?: CustomAttribute[];
+  sellerId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Initialize these variables for both server and client
 let client: any = null;
 let isConnected = false;
@@ -128,6 +175,57 @@ export async function initializeDatabase(): Promise<boolean> {
         product_count int,
         created_at timestamp,
         updated_at timestamp
+      )
+    `);
+    
+    // Create products table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS products (
+        id uuid PRIMARY KEY,
+        sku text,
+        name text,
+        slug text,
+        type text,
+        description text,
+        short_description text,
+        price decimal,
+        sale_price decimal,
+        sale_start_date timestamp,
+        sale_end_date timestamp,
+        stock_status text,
+        stock_quantity int,
+        manage_stock boolean,
+        weight decimal,
+        dimensions map<text, decimal>,
+        main_image text,
+        gallery_images list<text>,
+        category_ids list<uuid>,
+        tags list<text>,
+        brand_id uuid,
+        visibility text,
+        status text,
+        custom_attributes map<text, text>,
+        seller_id uuid,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
+
+    // Create product_categories table (for many-to-many relationship)
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_categories (
+        product_id uuid,
+        category_id uuid,
+        PRIMARY KEY (product_id, category_id)
+      )
+    `);
+
+    // Create product_tags table (for indexing and searching by tag)
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS product_tags (
+        tag text,
+        product_id uuid,
+        PRIMARY KEY (tag, product_id)
       )
     `);
     

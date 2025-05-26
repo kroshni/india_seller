@@ -62,17 +62,25 @@ var { g: global, __dirname, k: __turbopack_refresh__, m: module } = __turbopack_
 __turbopack_context__.s({
     "addBrand": (()=>addBrand),
     "addCategory": (()=>addCategory),
+    "addProduct": (()=>addProduct),
     "deleteBrandFromStorage": (()=>deleteBrandFromStorage),
+    "deleteBulkProductsFromStorage": (()=>deleteBulkProductsFromStorage),
     "deleteCategoryFromStorage": (()=>deleteCategoryFromStorage),
+    "deleteProductFromStorage": (()=>deleteProductFromStorage),
     "loadBrands": (()=>loadBrands),
     "loadCategories": (()=>loadCategories),
+    "loadProducts": (()=>loadProducts),
     "saveBrands": (()=>saveBrands),
     "saveCategories": (()=>saveCategories),
+    "saveProducts": (()=>saveProducts),
     "updateBrandInStorage": (()=>updateBrandInStorage),
-    "updateCategoryInStorage": (()=>updateCategoryInStorage)
+    "updateBulkProductStatusInStorage": (()=>updateBulkProductStatusInStorage),
+    "updateCategoryInStorage": (()=>updateCategoryInStorage),
+    "updateProductInStorage": (()=>updateProductInStorage)
 });
 const CATEGORIES_STORAGE_KEY = 'india_seller_categories';
 const BRANDS_STORAGE_KEY = 'india_seller_brands';
+const PRODUCTS_STORAGE_KEY = 'india_seller_products';
 function saveCategories(categories) {
     // Only run in browser
     if ("TURBOPACK compile-time falsy", 0) {
@@ -229,6 +237,135 @@ function deleteBrandFromStorage(id) {
     } catch (error) {
         console.error('Error deleting brand in localStorage:', error);
         return false;
+    }
+}
+function saveProducts(products) {
+    // Only run in browser
+    if ("TURBOPACK compile-time falsy", 0) {
+        "TURBOPACK unreachable";
+    }
+    try {
+        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+        console.log('Products saved to localStorage:', products.length);
+    } catch (error) {
+        console.error('Failed to save products to localStorage:', error);
+    }
+}
+function loadProducts() {
+    // Only run in browser
+    if ("TURBOPACK compile-time falsy", 0) {
+        "TURBOPACK unreachable";
+    }
+    try {
+        const data = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+        if (!data) return [];
+        const products = JSON.parse(data);
+        console.log('Products loaded from localStorage:', products.length);
+        return products;
+    } catch (error) {
+        console.error('Failed to load products from localStorage:', error);
+        return [];
+    }
+}
+function addProduct(product) {
+    const products = loadProducts();
+    products.push(product);
+    saveProducts(products);
+    console.log('Product added to localStorage:', product.name);
+}
+function updateProductInStorage(id, updatedProduct) {
+    try {
+        const products = loadProducts();
+        const index = products.findIndex((p)=>p.id === id);
+        if (index === -1) {
+            console.error('Product not found in localStorage, cannot update:', id);
+            return false;
+        }
+        // Create the updated product by merging existing with updates
+        const updated = {
+            ...products[index],
+            ...updatedProduct,
+            updatedAt: new Date().toISOString() // Always update the timestamp
+        };
+        // Replace the product in the array
+        products[index] = updated;
+        // Save back to localStorage
+        saveProducts(products);
+        console.log('Product updated in localStorage:', updated.name);
+        return true;
+    } catch (error) {
+        console.error('Error updating product in localStorage:', error);
+        return false;
+    }
+}
+function deleteProductFromStorage(id) {
+    try {
+        const products = loadProducts();
+        const index = products.findIndex((p)=>p.id === id);
+        if (index === -1) {
+            console.error('Product not found in localStorage, cannot delete:', id);
+            return false;
+        }
+        // Remove the product from the array
+        const name = products[index].name;
+        products.splice(index, 1);
+        // Save back to localStorage
+        saveProducts(products);
+        console.log('Product deleted from localStorage:', name);
+        return true;
+    } catch (error) {
+        console.error('Error deleting product in localStorage:', error);
+        return false;
+    }
+}
+function deleteBulkProductsFromStorage(ids) {
+    try {
+        let products = loadProducts();
+        const initialCount = products.length;
+        // Filter out products with IDs in the deletion list
+        products = products.filter((p)=>!ids.includes(p.id));
+        // Calculate how many were actually deleted
+        const deletedCount = initialCount - products.length;
+        // Save back to localStorage
+        saveProducts(products);
+        console.log(`Deleted ${deletedCount} products from localStorage`);
+        return {
+            success: true,
+            count: deletedCount
+        };
+    } catch (error) {
+        console.error('Error bulk deleting products from localStorage:', error);
+        return {
+            success: false,
+            count: 0
+        };
+    }
+}
+function updateBulkProductStatusInStorage(ids, status) {
+    try {
+        const products = loadProducts();
+        let updatedCount = 0;
+        // Update each product in the array
+        products.forEach((product)=>{
+            if (ids.includes(product.id)) {
+                product.status = status;
+                product.updatedAt = new Date().toISOString();
+                updatedCount++;
+            }
+        });
+        // Save back to localStorage
+        saveProducts(products);
+        console.log(`Updated status for ${updatedCount} products in localStorage`);
+        return {
+            success: true,
+            count: updatedCount
+        };
+    } catch (error) {
+        console.error('Error bulk updating product status in localStorage:', error);
+        return {
+            success: false,
+            count: 0
+        };
     }
 }
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
