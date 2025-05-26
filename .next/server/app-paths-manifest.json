@@ -1,5 +1,6 @@
 {
   "/api/sellers/route": "app/api/sellers/route.js",
+  "/dashboard/brands/page": "app/dashboard/brands/page.js",
   "/dashboard/categories/page": "app/dashboard/categories/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js"
 }

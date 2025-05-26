@@ -13,6 +13,18 @@ export interface Category {
   updatedAt: string;
 }
 
+// Brand interface for brand management
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  status: 'Active' | 'Inactive';
+  productCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Initialize these variables for both server and client
 let client: any = null;
 let isConnected = false;
@@ -98,6 +110,20 @@ export async function initializeDatabase(): Promise<boolean> {
         name text,
         slug text,
         description text,
+        status text,
+        product_count int,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
+    
+    // Create brands table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS brands (
+        id uuid PRIMARY KEY,
+        name text,
+        slug text,
+        logo text,
         status text,
         product_count int,
         created_at timestamp,

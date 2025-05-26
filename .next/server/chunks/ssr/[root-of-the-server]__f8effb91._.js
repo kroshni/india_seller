@@ -216,6 +216,19 @@ async function initializeDatabase() {
         updated_at timestamp
       )
     `);
+        // Create brands table
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS brands (
+        id uuid PRIMARY KEY,
+        name text,
+        slug text,
+        logo text,
+        status text,
+        product_count int,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
         console.log('Database tables initialized successfully');
         return true;
     } catch (error) {
@@ -247,16 +260,22 @@ async function closeClient() {
 
 var { g: global, __dirname } = __turbopack_context__;
 {
-// Simple local storage implementation for categories
+// Simple local storage implementation for categories and brands
 // This is a fallback solution when Cassandra database is not available
 __turbopack_context__.s({
+    "addBrand": (()=>addBrand),
     "addCategory": (()=>addCategory),
+    "deleteBrandFromStorage": (()=>deleteBrandFromStorage),
     "deleteCategoryFromStorage": (()=>deleteCategoryFromStorage),
+    "loadBrands": (()=>loadBrands),
     "loadCategories": (()=>loadCategories),
+    "saveBrands": (()=>saveBrands),
     "saveCategories": (()=>saveCategories),
+    "updateBrandInStorage": (()=>updateBrandInStorage),
     "updateCategoryInStorage": (()=>updateCategoryInStorage)
 });
 const CATEGORIES_STORAGE_KEY = 'india_seller_categories';
+const BRANDS_STORAGE_KEY = 'india_seller_brands';
 function saveCategories(categories) {
     // Only run in browser
     if ("TURBOPACK compile-time truthy", 1) return;
@@ -315,6 +334,67 @@ function deleteCategoryFromStorage(id) {
         return true;
     } catch (error) {
         console.error('Error deleting category from localStorage:', error);
+        return false;
+    }
+}
+function saveBrands(brands) {
+    // Only run in browser
+    if ("TURBOPACK compile-time truthy", 1) return;
+    "TURBOPACK unreachable";
+}
+function loadBrands() {
+    // Only run in browser
+    if ("TURBOPACK compile-time truthy", 1) return [];
+    "TURBOPACK unreachable";
+}
+function addBrand(brand) {
+    const brands = loadBrands();
+    brands.push(brand);
+    saveBrands(brands);
+    console.log('Brand added to localStorage:', brand.name);
+}
+function updateBrandInStorage(id, updatedBrand) {
+    try {
+        const brands = loadBrands();
+        const index = brands.findIndex((b)=>b.id === id);
+        if (index === -1) {
+            console.error('Brand not found in localStorage, cannot update:', id);
+            return false;
+        }
+        // Create the updated brand by merging existing with updates
+        const updated = {
+            ...brands[index],
+            ...updatedBrand,
+            updatedAt: new Date().toISOString() // Always update the timestamp
+        };
+        // Replace the brand in the array
+        brands[index] = updated;
+        // Save back to localStorage
+        saveBrands(brands);
+        console.log('Brand updated in localStorage:', updated.name);
+        return true;
+    } catch (error) {
+        console.error('Error updating brand in localStorage:', error);
+        return false;
+    }
+}
+function deleteBrandFromStorage(id) {
+    try {
+        const brands = loadBrands();
+        const index = brands.findIndex((b)=>b.id === id);
+        if (index === -1) {
+            console.error('Brand not found in localStorage, cannot delete:', id);
+            return false;
+        }
+        // Remove the brand from the array
+        const name = brands[index].name;
+        brands.splice(index, 1);
+        // Save back to localStorage
+        saveBrands(brands);
+        console.log('Brand deleted from localStorage:', name);
+        return true;
+    } catch (error) {
+        console.error('Error deleting brand in localStorage:', error);
         return false;
     }
 }

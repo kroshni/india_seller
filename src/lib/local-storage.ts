@@ -1,9 +1,12 @@
-// Simple local storage implementation for categories
+// Simple local storage implementation for categories and brands
 // This is a fallback solution when Cassandra database is not available
 
-import { Category } from './cassandra';
+import { Category, Brand } from './cassandra';
 
 const CATEGORIES_STORAGE_KEY = 'india_seller_categories';
+const BRANDS_STORAGE_KEY = 'india_seller_brands';
+
+// ====== CATEGORIES ======
 
 // Save categories to localStorage
 export function saveCategories(categories: Category[]): void {
@@ -96,6 +99,103 @@ export function deleteCategoryFromStorage(id: string): boolean {
     return true;
   } catch (error) {
     console.error('Error deleting category from localStorage:', error);
+    return false;
+  }
+}
+
+// ====== BRANDS ======
+
+// Save brands to localStorage
+export function saveBrands(brands: Brand[]): void {
+  // Only run in browser
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(BRANDS_STORAGE_KEY, JSON.stringify(brands));
+    console.log('Brands saved to localStorage:', brands.length);
+  } catch (error) {
+    console.error('Failed to save brands to localStorage:', error);
+  }
+}
+
+// Load brands from localStorage
+export function loadBrands(): Brand[] {
+  // Only run in browser
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const data = localStorage.getItem(BRANDS_STORAGE_KEY);
+    if (!data) return [];
+    
+    const brands = JSON.parse(data) as Brand[];
+    console.log('Brands loaded from localStorage:', brands.length);
+    return brands;
+  } catch (error) {
+    console.error('Failed to load brands from localStorage:', error);
+    return [];
+  }
+}
+
+// Add a new brand to localStorage
+export function addBrand(brand: Brand): void {
+  const brands = loadBrands();
+  brands.push(brand);
+  saveBrands(brands);
+  console.log('Brand added to localStorage:', brand.name);
+}
+
+// Update a brand in localStorage
+export function updateBrandInStorage(id: string, updatedBrand: Partial<Brand>): boolean {
+  try {
+    const brands = loadBrands();
+    const index = brands.findIndex(b => b.id === id);
+    
+    if (index === -1) {
+      console.error('Brand not found in localStorage, cannot update:', id);
+      return false;
+    }
+    
+    // Create the updated brand by merging existing with updates
+    const updated = {
+      ...brands[index],
+      ...updatedBrand,
+      updatedAt: new Date().toISOString() // Always update the timestamp
+    };
+    
+    // Replace the brand in the array
+    brands[index] = updated;
+    
+    // Save back to localStorage
+    saveBrands(brands);
+    console.log('Brand updated in localStorage:', updated.name);
+    return true;
+  } catch (error) {
+    console.error('Error updating brand in localStorage:', error);
+    return false;
+  }
+}
+
+// Delete a brand from localStorage
+export function deleteBrandFromStorage(id: string): boolean {
+  try {
+    const brands = loadBrands();
+    const index = brands.findIndex(b => b.id === id);
+    
+    if (index === -1) {
+      console.error('Brand not found in localStorage, cannot delete:', id);
+      return false;
+    }
+    
+    // Remove the brand from the array
+    const name = brands[index].name;
+    brands.splice(index, 1);
+    
+    // Save back to localStorage
+    saveBrands(brands);
+    console.log('Brand deleted from localStorage:', name);
+    return true;
+  } catch (error) {
+    console.error('Error deleting brand in localStorage:', error);
     return false;
   }
 } 

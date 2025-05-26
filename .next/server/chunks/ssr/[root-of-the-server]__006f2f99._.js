@@ -262,6 +262,19 @@ async function initializeDatabase() {
         updated_at timestamp
       )
     `);
+        // Create brands table
+        await client.execute(`
+      CREATE TABLE IF NOT EXISTS brands (
+        id uuid PRIMARY KEY,
+        name text,
+        slug text,
+        logo text,
+        status text,
+        product_count int,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
         console.log('Database tables initialized successfully');
         return true;
     } catch (error) {
