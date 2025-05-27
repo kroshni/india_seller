@@ -236,7 +236,11 @@ export default function Sidebar() {
           icon={icons.products}
           isActive={isActive('/dashboard/products')}
           checkActive={isActive}
-          children={[]}
+          children={[
+            { href: '/dashboard/products', title: 'All Products' },
+            { href: '/dashboard/products/add', title: 'Add New Product' },
+            { href: '/dashboard/products/assignments', title: 'Assign to Sellers' }
+          ]}
         />
         
         <div className="mt-6 pt-6 border-t border-gray-200">

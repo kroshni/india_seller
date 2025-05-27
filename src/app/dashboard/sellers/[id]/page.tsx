@@ -7,10 +7,13 @@ import { getSellerById, deleteSeller } from '@/lib/api-client/seller-client';
 import TopScorerBar from '@/components/sellers/TopScorerBar';
 import SellerStatusBadge from '@/components/sellers/SellerStatusBadge';
 import KycStatusBadge from '@/components/sellers/KycStatusBadge';
+import AssignedProductsList from '@/components/sellers/AssignedProductsList';
+import { use } from 'react';
 
 export default function SellerDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const sellerId = params.id;
+  const resolvedParams = use(params);
+  const sellerId = resolvedParams.id;
   
   const [seller, setSeller] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -223,21 +226,18 @@ export default function SellerDetailsPage({ params }: { params: { id: string } }
           </div>
           
           {/* Products */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Products</h2>
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-gray-900">Assigned Products</h2>
+              <Link
+                href={`/dashboard/sellers/${sellerId}/manage-products`}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Manage Products
+              </Link>
+            </div>
             
-            {seller.products.length === 0 ? (
-              <p className="text-gray-500">No products added yet.</p>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {seller.products.map((product: any, index: number) => (
-                  <li key={index} className="py-3">
-                    <p className="text-gray-900 font-medium">{product.productName}</p>
-                    <p className="text-gray-600 text-sm">{product.category}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AssignedProductsList sellerId={sellerId} />
           </div>
         </div>
         

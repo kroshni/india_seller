@@ -11,9 +11,11 @@ __turbopack_context__.s({
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
     "getSellerById": (()=>getSellerById),
+    "getSellerProductAssignments": (()=>getSellerProductAssignments),
     "getSellers": (()=>getSellers),
     "updateSeller": (()=>updateSeller),
     "updateSellerKycStatus": (()=>updateSellerKycStatus),
+    "updateSellerProductAssignments": (()=>updateSellerProductAssignments),
     "updateSellerStatus": (()=>updateSellerStatus),
     "updateSellerTopScorer": (()=>updateSellerTopScorer)
 });
@@ -233,6 +235,87 @@ async function bulkDeleteSellers(sellerIds) {
     } catch (error) {
         console.error('Error bulk deleting sellers:', error);
         return false;
+    }
+}
+async function getSellerProductAssignments(sellerId) {
+    try {
+        console.log(`[API CLIENT] Getting product assignments for seller ${sellerId}`);
+        const response = await fetch(`/api/sellers/${sellerId}/products`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to get seller product assignments');
+        }
+        const data = await response.json();
+        const productIds = data.productIds || [];
+        console.log(`[API CLIENT] Received ${productIds.length} product assignments`);
+        return productIds;
+    } catch (error) {
+        console.error('Error getting seller product assignments:', error);
+        throw error;
+    }
+}
+async function updateSellerProductAssignments(sellerId, productIds) {
+    try {
+        console.log(`[API CLIENT] Updating products for seller ${sellerId}`);
+        console.log(`[API CLIENT] Original product IDs (${productIds.length}):`, productIds);
+        // Validate that productIds is an array and is not empty
+        if (!Array.isArray(productIds)) {
+            console.error('[API CLIENT] Product IDs is not an array');
+            throw new Error('Product IDs must be an array');
+        }
+        // Check if we have any products with DUMMY format (from the old code)
+        const dummyProductIds = productIds.filter((id)=>id.startsWith('DUMMY-'));
+        if (dummyProductIds.length > 0) {
+            console.warn(`[API CLIENT] Found ${dummyProductIds.length} dummy-formatted product IDs that won't be saved:`, dummyProductIds);
+        }
+        // Only send UUIDs that match the expected format
+        const validProductIds = [];
+        const invalidProductIds = [];
+        for (const id of productIds){
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (uuidRegex.test(id)) {
+                validProductIds.push(id);
+            } else {
+                invalidProductIds.push(id);
+            }
+        }
+        if (invalidProductIds.length > 0) {
+            console.warn(`[API CLIENT] Found ${invalidProductIds.length} invalid UUID format product IDs:`, invalidProductIds);
+        }
+        // If we have no valid IDs and were trying to assign products, this is probably an error
+        if (validProductIds.length === 0 && productIds.length > 0) {
+            console.error(`[API CLIENT] No valid UUIDs found in the ${productIds.length} product IDs provided`);
+            throw new Error(`No valid UUIDs found in the ${productIds.length} product IDs. Please check that your products have valid UUIDs.`);
+        }
+        console.log(`[API CLIENT] Sending ${validProductIds.length} valid product IDs to server:`, validProductIds);
+        // Send only valid product IDs to the server
+        const response = await fetch(`/api/sellers/${sellerId}/products`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                productIds: validProductIds,
+                originalCount: productIds.length,
+                debug: true
+            })
+        });
+        const data = await response.json();
+        console.log(`[API CLIENT] Server response:`, data);
+        if (!response.ok) {
+            const errorMessage = data.error || 'Failed to update seller product assignments';
+            console.error(`[API CLIENT] API error (${response.status}):`, errorMessage);
+            throw new Error(errorMessage);
+        }
+        return data.success;
+    } catch (error) {
+        console.error('[API CLIENT] Error updating seller product assignments:', error);
+        throw error;
     }
 }
 }}),

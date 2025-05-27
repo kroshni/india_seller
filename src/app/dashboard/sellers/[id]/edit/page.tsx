@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSellerById, updateSeller } from '@/lib/api-client/seller-client';
+import ProductAssignmentForm from '@/components/sellers/ProductAssignmentForm';
+import { use } from 'react';
 
 export default function EditSellerPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const sellerId = params.id;
+  // Use React.use to unwrap the params Promise
+  const resolvedParams = use(params);
+  const sellerId = resolvedParams.id;
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -705,18 +709,29 @@ export default function EditSellerPage({ params }: { params: { id: string } }) {
           ))}
         </div>
         
+        {/* Product Assignments */}
+        <div className="border-t border-gray-200 pt-8">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Product Assignments</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Assign products to this seller using the multi-select interface below. These products will be associated with the seller.
+          </p>
+          
+          <ProductAssignmentForm sellerId={sellerId} standalone={false} />
+        </div>
+        
         {/* Form Actions */}
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end space-x-4 border-t border-gray-200 pt-6">
           <Link
             href={`/dashboard/sellers/${sellerId}`}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </Link>
+          
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>

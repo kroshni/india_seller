@@ -2,6 +2,12 @@ import { getClient } from '../db/cassandra';
 import { v4 as uuidv4 } from 'uuid';
 import { types } from 'cassandra-driver';
 
+// Check if we should use mock data
+function shouldUseMockData(): boolean {
+  // Always use database, never mock data
+  return false;
+}
+
 export interface Seller {
   id: string;
   name: string;
@@ -44,6 +50,12 @@ export interface SellerProduct {
   sellerId: string;
   productName: string;
   category: string;
+}
+
+export interface SellerProductAssignment {
+  sellerId: string;
+  productId: string;
+  assignedAt: Date;
 }
 
 export interface SellerDocument {
@@ -130,24 +142,32 @@ export interface CreateSellerInput {
   }[];
 }
 
-export async function getAllSellers(filters: SellerFilters = {}): Promise<{ sellers: Seller[], total: number }> {
+export async function getAllSellers(
+  filters: SellerFilters = {}
+): Promise<{ sellers: Seller[]; total: number }> {
   try {
+    console.log('Getting all sellers from database');
+    
     const client = await getClient();
-    const limit = filters.limit || 10;
-    const page = filters.page || 1;
-    const offset = (page - 1) * limit;
     
     // Build query based on filters
     let query = 'SELECT * FROM sellers';
-    const countQuery = 'SELECT COUNT(*) FROM sellers';
+    const queryParams: any[] = [];
     
-    // In Cassandra, filtering requires a secondary index or ALLOW FILTERING
-    // For simplicity, we'll fetch all and filter in-memory, but in production
-    // you'd want to use a secondary index or a search service
-    const result = await client.execute(query);
-    const countResult = await client.execute(countQuery);
+    // Apply status filter if provided
+    if (filters.status && filters.status !== 'All') {
+      query += ' WHERE status = ?';
+      queryParams.push(filters.status);
+    }
     
-    let sellers = result.rows.map(row => ({
+    // Note: Cassandra doesn't support complex WHERE clauses like in SQL
+    // For advanced filtering, we'll need to fetch all and filter in memory
+    
+    // Execute the query
+    const result = await client.execute(query, queryParams, { prepare: true });
+    
+    // Convert rows to Seller objects
+    let sellers: Seller[] = result.rows.map(row => ({
       id: row.id.toString(),
       name: row.name,
       email: row.email,
@@ -160,51 +180,70 @@ export async function getAllSellers(filters: SellerFilters = {}): Promise<{ sell
       updatedAt: row.updated_at
     }));
     
-    // Apply filters in memory
-    if (filters.search) {
-      const search = filters.search.toLowerCase();
-      sellers = sellers.filter(seller => 
-        seller.name.toLowerCase().includes(search) || 
-        seller.email.toLowerCase().includes(search) || 
-        seller.phone.toLowerCase().includes(search)
-      );
-    }
-    
-    if (filters.status && filters.status !== 'All') {
-      sellers = sellers.filter(seller => seller.status === filters.status);
-    }
-    
+    // Apply additional filters in memory
+    // Filter by KYC status
     if (filters.kycStatus && filters.kycStatus !== 'All') {
       sellers = sellers.filter(seller => seller.kycStatus === filters.kycStatus);
     }
     
+    // Filter by search term
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      sellers = sellers.filter(seller => 
+        seller.name.toLowerCase().includes(searchTerm) ||
+        seller.email.toLowerCase().includes(searchTerm) ||
+        seller.phone.includes(searchTerm)
+      );
+    }
+    
+    // Filter by top scorer range
     if (filters.minTopScorer !== undefined) {
-      sellers = sellers.filter(seller => seller.isTopScorer >= filters.minTopScorer!);
+      sellers = sellers.filter(seller => (seller.isTopScorer || 0) >= filters.minTopScorer!);
     }
     
     if (filters.maxTopScorer !== undefined) {
-      sellers = sellers.filter(seller => seller.isTopScorer <= filters.maxTopScorer!);
+      sellers = sellers.filter(seller => (seller.isTopScorer || 0) <= filters.maxTopScorer!);
     }
     
-    // Apply sorting
+    // Sort sellers
     if (filters.sortBy) {
       const sortOrder = filters.sortOrder === 'desc' ? -1 : 1;
-      
-      sellers.sort((a: any, b: any) => {
-        if (a[filters.sortBy!] < b[filters.sortBy!]) return -1 * sortOrder;
-        if (a[filters.sortBy!] > b[filters.sortBy!]) return 1 * sortOrder;
-        return 0;
+      sellers.sort((a, b) => {
+        let valueA: any = a[filters.sortBy as keyof Seller];
+        let valueB: any = b[filters.sortBy as keyof Seller];
+        
+        // Handle string comparison
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          return sortOrder * valueA.localeCompare(valueB);
+        }
+        
+        // Handle date comparison
+        if (valueA instanceof Date && valueB instanceof Date) {
+          return sortOrder * (valueA.getTime() - valueB.getTime());
+        }
+        
+        // Handle number comparison
+        return sortOrder * ((valueA || 0) - (valueB || 0));
       });
     }
     
+    // Get total before pagination
     const total = sellers.length;
     
     // Apply pagination
-    sellers = sellers.slice(offset, offset + limit);
+    if (filters.page && filters.limit) {
+      const startIndex = (filters.page - 1) * filters.limit;
+      sellers = sellers.slice(startIndex, startIndex + filters.limit);
+    }
     
-    return { sellers, total };
+    console.log(`Found ${total} sellers in database, returning ${sellers.length} after filtering/pagination`);
+    
+    return {
+      sellers,
+      total
+    };
   } catch (error) {
-    console.error('Error getting sellers:', error);
+    console.error('Error getting all sellers:', error);
     return { sellers: [], total: 0 };
   }
 }
@@ -218,6 +257,8 @@ export async function getSellerById(id: string): Promise<{
   gallery: SellerGallery[];
 } | null> {
   try {
+    console.log(`Getting seller details for ID: ${id}`);
+    
     const client = await getClient();
     
     // Get seller personal details
@@ -225,6 +266,7 @@ export async function getSellerById(id: string): Promise<{
     const sellerResult = await client.execute(sellerQuery, [types.Uuid.fromString(id)], { prepare: true });
     
     if (sellerResult.rowLength === 0) {
+      console.log(`No seller found in database with ID: ${id}`);
       return null;
     }
     
@@ -258,9 +300,20 @@ export async function getSellerById(id: string): Promise<{
         accountNumber: businessRow.account_number,
         ifscCode: businessRow.ifsc_code
       };
+    } else {
+      // Create a default business object if not found
+      business = {
+        sellerId: id,
+        companyName: '',
+        gstin: '',
+        pan: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: ''
+      };
     }
     
-    // Get addresses - We have an index, so no need for ALLOW FILTERING
+    // Get addresses
     const addressesQuery = 'SELECT * FROM seller_addresses WHERE seller_id = ?';
     const addressesResult = await client.execute(addressesQuery, [types.Uuid.fromString(id)], { prepare: true });
     
@@ -278,7 +331,7 @@ export async function getSellerById(id: string): Promise<{
       image: row.image
     }));
     
-    // Get products - now using the secondary index, so no need for ALLOW FILTERING
+    // Get products
     const productsQuery = 'SELECT * FROM seller_products WHERE seller_id = ?';
     const productsResult = await client.execute(productsQuery, [types.Uuid.fromString(id)], { prepare: true });
     
@@ -289,7 +342,7 @@ export async function getSellerById(id: string): Promise<{
       category: row.category
     }));
     
-    // Get documents - We have an index, so no need for ALLOW FILTERING
+    // Get documents
     const documentsQuery = 'SELECT * FROM seller_documents WHERE seller_id = ?';
     const documentsResult = await client.execute(documentsQuery, [types.Uuid.fromString(id)], { prepare: true });
     
@@ -301,7 +354,7 @@ export async function getSellerById(id: string): Promise<{
       uploadedAt: row.uploaded_at
     }));
     
-    // Get gallery images - We have an index, so no need for ALLOW FILTERING
+    // Get gallery images
     const galleryQuery = 'SELECT * FROM seller_gallery WHERE seller_id = ?';
     const galleryResult = await client.execute(galleryQuery, [types.Uuid.fromString(id)], { prepare: true });
     
@@ -313,9 +366,11 @@ export async function getSellerById(id: string): Promise<{
       uploadedAt: row.uploaded_at
     }));
     
+    console.log(`Successfully retrieved seller ${id} from database`);
+    
     return {
       seller,
-      business: business!,
+      business,
       addresses,
       products,
       documents,
@@ -939,5 +994,142 @@ export async function bulkDeleteSellers(sellerIds: string[]): Promise<boolean> {
   } catch (error) {
     console.error('Error performing bulk delete on sellers:', error);
     return false;
+  }
+}
+
+// Get product assignments for a seller
+export async function getSellerProductAssignments(sellerId: string): Promise<string[]> {
+  try {
+    console.log(`Getting product assignments for seller ${sellerId} from database`);
+    
+    const client = await getClient();
+    
+    // Get seller details first to verify seller exists
+    const sellerQuery = 'SELECT id FROM sellers WHERE id = ?';
+    const sellerResult = await client.execute(sellerQuery, [types.Uuid.fromString(sellerId)], { prepare: true });
+    
+    if (sellerResult.rowLength === 0) {
+      console.log(`No seller found in database with ID: ${sellerId}`);
+      return [];
+    }
+    
+    // Get product assignments
+    const assignmentsQuery = 'SELECT product_id FROM seller_product_assignments WHERE seller_id = ?';
+    const assignmentsResult = await client.execute(assignmentsQuery, [types.Uuid.fromString(sellerId)], { prepare: true });
+    
+    const productIds = assignmentsResult.rows.map(row => row.product_id.toString());
+    
+    console.log(`Found ${productIds.length} product assignments for seller ${sellerId}: ${JSON.stringify(productIds)}`);
+    return productIds;
+  } catch (error) {
+    console.error('Error getting product assignments:', error);
+    return [];
+  }
+}
+
+// Update product assignments for a seller
+export async function updateSellerProductAssignments(
+  sellerId: string, 
+  productIds: string[]
+): Promise<boolean> {
+  try {
+    const client = await getClient();
+    
+    console.log(`Updating product assignments for seller ${sellerId}: ${productIds.length} products`);
+    console.log('Product IDs to assign:', productIds);
+    
+    // Validate that all product IDs are valid UUIDs
+    const validProductIds = [];
+    const invalidProductIds = [];
+    
+    for (const id of productIds) {
+      try {
+        types.Uuid.fromString(id);
+        validProductIds.push(id);
+      } catch (error) {
+        invalidProductIds.push(id);
+        console.error(`Invalid UUID format for product ${id}`);
+      }
+    }
+    
+    if (invalidProductIds.length > 0) {
+      console.warn(`Filtered out ${invalidProductIds.length} invalid product IDs:`, invalidProductIds);
+      console.log(`Proceeding with ${validProductIds.length} valid product IDs:`, validProductIds);
+    }
+    
+    // First delete all existing assignments
+    const deleteQuery = 'DELETE FROM seller_product_assignments WHERE seller_id = ?';
+    await client.execute(deleteQuery, [types.Uuid.fromString(sellerId)], { prepare: true });
+    console.log(`Deleted existing product assignments for seller ${sellerId}`);
+    
+    // Then insert new assignments with valid UUIDs
+    if (validProductIds.length > 0) {
+      try {
+        const insertQuery = 'INSERT INTO seller_product_assignments (seller_id, product_id, assigned_at) VALUES (?, ?, ?)';
+        const now = new Date();
+        
+        // Create batch queries
+        const batch = [];
+        for (const productId of validProductIds) {
+          const sellerUuid = types.Uuid.fromString(sellerId);
+          const productUuid = types.Uuid.fromString(productId);
+          
+          batch.push({
+            query: insertQuery,
+            params: [sellerUuid, productUuid, now]
+          });
+        }
+        
+        console.log(`Executing batch insert with ${batch.length} queries`);
+        
+        if (batch.length > 0) {
+          // Execute batch with prepare option
+          await client.batch(batch, { prepare: true });
+          console.log(`Successfully inserted ${batch.length} product assignments`);
+        } else {
+          console.warn('No valid product IDs to insert');
+        }
+      } catch (batchError) {
+        console.error('Error executing batch insert:', batchError);
+        throw batchError;
+      }
+    }
+    
+    // Verify assignments were saved correctly
+    const verifyQuery = 'SELECT product_id FROM seller_product_assignments WHERE seller_id = ?';
+    const verifyResult = await client.execute(verifyQuery, [types.Uuid.fromString(sellerId)], { prepare: true });
+    const savedProductIds = verifyResult.rows.map(row => row.product_id.toString());
+    
+    console.log(`Verification: ${savedProductIds.length} product assignments saved for seller ${sellerId}`);
+    console.log('Saved product IDs:', savedProductIds);
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating seller product assignments:', error);
+    return false;
+  }
+}
+
+// Get all product IDs that are assigned to any seller
+export async function getAllAssignedProductIds(): Promise<string[]> {
+  try {
+    console.log('Getting all assigned product IDs from database');
+    
+    const client = await getClient();
+    
+    // Query all product assignments
+    const query = 'SELECT product_id FROM seller_product_assignments';
+    const result = await client.execute(query, [], { prepare: true });
+    
+    // Extract product IDs and remove duplicates
+    const productIds = Array.from(new Set(
+      result.rows.map(row => row.product_id.toString())
+    ));
+    
+    console.log(`Found ${productIds.length} assigned product IDs in database`);
+    return productIds;
+  } catch (error) {
+    console.error('Error getting all assigned product IDs:', error);
+    return [];
   }
 } 

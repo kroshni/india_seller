@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-db:seller-product-assignments": "node -r ts-node/register scripts/init-seller-product-assignments.js"
   },
   "dependencies": {
     "@auth/nextjs": "^0.0.0-380f8d56",

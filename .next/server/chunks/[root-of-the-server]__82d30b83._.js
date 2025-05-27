@@ -262,6 +262,15 @@ async function initializeSchema() {
       PRIMARY KEY (seller_id, product_name)
     )
   `);
+    // Create seller_product_assignments table (many-to-many relationship)
+    await client.execute(`
+    CREATE TABLE IF NOT EXISTS seller_product_assignments (
+      seller_id uuid,
+      product_id uuid,
+      assigned_at timestamp,
+      PRIMARY KEY (seller_id, product_id)
+    )
+  `);
     // Create seller_documents table
     await client.execute(`
     CREATE TABLE IF NOT EXISTS seller_documents (
@@ -300,11 +309,14 @@ __turbopack_context__.s({
     "bulkUpdateSellers": (()=>bulkUpdateSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
+    "getAllAssignedProductIds": (()=>getAllAssignedProductIds),
     "getAllSellers": (()=>getAllSellers),
     "getSellerById": (()=>getSellerById),
+    "getSellerProductAssignments": (()=>getSellerProductAssignments),
     "updateSeller": (()=>updateSeller),
     "updateSellerBusiness": (()=>updateSellerBusiness),
     "updateSellerKycStatus": (()=>updateSellerKycStatus),
+    "updateSellerProductAssignments": (()=>updateSellerProductAssignments),
     "updateSellerStatus": (()=>updateSellerStatus),
     "updateSellerTopScorer": (()=>updateSellerTopScorer)
 });
@@ -314,20 +326,30 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d
 ;
 ;
 ;
+// Check if we should use mock data
+function shouldUseMockData() {
+    // Always use database, never mock data
+    return false;
+}
 async function getAllSellers(filters = {}) {
     try {
+        console.log('Getting all sellers from database');
         const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
-        const limit = filters.limit || 10;
-        const page = filters.page || 1;
-        const offset = (page - 1) * limit;
         // Build query based on filters
         let query = 'SELECT * FROM sellers';
-        const countQuery = 'SELECT COUNT(*) FROM sellers';
-        // In Cassandra, filtering requires a secondary index or ALLOW FILTERING
-        // For simplicity, we'll fetch all and filter in-memory, but in production
-        // you'd want to use a secondary index or a search service
-        const result = await client.execute(query);
-        const countResult = await client.execute(countQuery);
+        const queryParams = [];
+        // Apply status filter if provided
+        if (filters.status && filters.status !== 'All') {
+            query += ' WHERE status = ?';
+            queryParams.push(filters.status);
+        }
+        // Note: Cassandra doesn't support complex WHERE clauses like in SQL
+        // For advanced filtering, we'll need to fetch all and filter in memory
+        // Execute the query
+        const result = await client.execute(query, queryParams, {
+            prepare: true
+        });
+        // Convert rows to Seller objects
         let sellers = result.rows.map((row)=>({
                 id: row.id.toString(),
                 name: row.name,
@@ -340,41 +362,55 @@ async function getAllSellers(filters = {}) {
                 createdAt: row.created_at,
                 updatedAt: row.updated_at
             }));
-        // Apply filters in memory
-        if (filters.search) {
-            const search = filters.search.toLowerCase();
-            sellers = sellers.filter((seller)=>seller.name.toLowerCase().includes(search) || seller.email.toLowerCase().includes(search) || seller.phone.toLowerCase().includes(search));
-        }
-        if (filters.status && filters.status !== 'All') {
-            sellers = sellers.filter((seller)=>seller.status === filters.status);
-        }
+        // Apply additional filters in memory
+        // Filter by KYC status
         if (filters.kycStatus && filters.kycStatus !== 'All') {
             sellers = sellers.filter((seller)=>seller.kycStatus === filters.kycStatus);
         }
+        // Filter by search term
+        if (filters.search) {
+            const searchTerm = filters.search.toLowerCase();
+            sellers = sellers.filter((seller)=>seller.name.toLowerCase().includes(searchTerm) || seller.email.toLowerCase().includes(searchTerm) || seller.phone.includes(searchTerm));
+        }
+        // Filter by top scorer range
         if (filters.minTopScorer !== undefined) {
-            sellers = sellers.filter((seller)=>seller.isTopScorer >= filters.minTopScorer);
+            sellers = sellers.filter((seller)=>(seller.isTopScorer || 0) >= filters.minTopScorer);
         }
         if (filters.maxTopScorer !== undefined) {
-            sellers = sellers.filter((seller)=>seller.isTopScorer <= filters.maxTopScorer);
+            sellers = sellers.filter((seller)=>(seller.isTopScorer || 0) <= filters.maxTopScorer);
         }
-        // Apply sorting
+        // Sort sellers
         if (filters.sortBy) {
             const sortOrder = filters.sortOrder === 'desc' ? -1 : 1;
             sellers.sort((a, b)=>{
-                if (a[filters.sortBy] < b[filters.sortBy]) return -1 * sortOrder;
-                if (a[filters.sortBy] > b[filters.sortBy]) return 1 * sortOrder;
-                return 0;
+                let valueA = a[filters.sortBy];
+                let valueB = b[filters.sortBy];
+                // Handle string comparison
+                if (typeof valueA === 'string' && typeof valueB === 'string') {
+                    return sortOrder * valueA.localeCompare(valueB);
+                }
+                // Handle date comparison
+                if (valueA instanceof Date && valueB instanceof Date) {
+                    return sortOrder * (valueA.getTime() - valueB.getTime());
+                }
+                // Handle number comparison
+                return sortOrder * ((valueA || 0) - (valueB || 0));
             });
         }
+        // Get total before pagination
         const total = sellers.length;
         // Apply pagination
-        sellers = sellers.slice(offset, offset + limit);
+        if (filters.page && filters.limit) {
+            const startIndex = (filters.page - 1) * filters.limit;
+            sellers = sellers.slice(startIndex, startIndex + filters.limit);
+        }
+        console.log(`Found ${total} sellers in database, returning ${sellers.length} after filtering/pagination`);
         return {
             sellers,
             total
         };
     } catch (error) {
-        console.error('Error getting sellers:', error);
+        console.error('Error getting all sellers:', error);
         return {
             sellers: [],
             total: 0
@@ -383,6 +419,7 @@ async function getAllSellers(filters = {}) {
 }
 async function getSellerById(id) {
     try {
+        console.log(`Getting seller details for ID: ${id}`);
         const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
         // Get seller personal details
         const sellerQuery = 'SELECT * FROM sellers WHERE id = ?';
@@ -392,6 +429,7 @@ async function getSellerById(id) {
             prepare: true
         });
         if (sellerResult.rowLength === 0) {
+            console.log(`No seller found in database with ID: ${id}`);
             return null;
         }
         const sellerRow = sellerResult.first();
@@ -426,8 +464,19 @@ async function getSellerById(id) {
                 accountNumber: businessRow.account_number,
                 ifscCode: businessRow.ifsc_code
             };
+        } else {
+            // Create a default business object if not found
+            business = {
+                sellerId: id,
+                companyName: '',
+                gstin: '',
+                pan: '',
+                bankName: '',
+                accountNumber: '',
+                ifscCode: ''
+            };
         }
-        // Get addresses - We have an index, so no need for ALLOW FILTERING
+        // Get addresses
         const addressesQuery = 'SELECT * FROM seller_addresses WHERE seller_id = ?';
         const addressesResult = await client.execute(addressesQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -447,7 +496,7 @@ async function getSellerById(id) {
                 isDefault: row.is_default,
                 image: row.image
             }));
-        // Get products - now using the secondary index, so no need for ALLOW FILTERING
+        // Get products
         const productsQuery = 'SELECT * FROM seller_products WHERE seller_id = ?';
         const productsResult = await client.execute(productsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -460,7 +509,7 @@ async function getSellerById(id) {
                 productName: row.product_name,
                 category: row.category
             }));
-        // Get documents - We have an index, so no need for ALLOW FILTERING
+        // Get documents
         const documentsQuery = 'SELECT * FROM seller_documents WHERE seller_id = ?';
         const documentsResult = await client.execute(documentsQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -474,7 +523,7 @@ async function getSellerById(id) {
                 documentUrl: row.document_url,
                 uploadedAt: row.uploaded_at
             }));
-        // Get gallery images - We have an index, so no need for ALLOW FILTERING
+        // Get gallery images
         const galleryQuery = 'SELECT * FROM seller_gallery WHERE seller_id = ?';
         const galleryResult = await client.execute(galleryQuery, [
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id)
@@ -488,9 +537,10 @@ async function getSellerById(id) {
                 caption: row.caption,
                 uploadedAt: row.uploaded_at
             }));
+        console.log(`Successfully retrieved seller ${id} from database`);
         return {
             seller,
-            business: business,
+            business,
             addresses,
             products,
             documents,
@@ -1093,6 +1143,133 @@ async function bulkDeleteSellers(sellerIds) {
     } catch (error) {
         console.error('Error performing bulk delete on sellers:', error);
         return false;
+    }
+}
+async function getSellerProductAssignments(sellerId) {
+    try {
+        console.log(`Getting product assignments for seller ${sellerId} from database`);
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        // Get seller details first to verify seller exists
+        const sellerQuery = 'SELECT id FROM sellers WHERE id = ?';
+        const sellerResult = await client.execute(sellerQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId)
+        ], {
+            prepare: true
+        });
+        if (sellerResult.rowLength === 0) {
+            console.log(`No seller found in database with ID: ${sellerId}`);
+            return [];
+        }
+        // Get product assignments
+        const assignmentsQuery = 'SELECT product_id FROM seller_product_assignments WHERE seller_id = ?';
+        const assignmentsResult = await client.execute(assignmentsQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId)
+        ], {
+            prepare: true
+        });
+        const productIds = assignmentsResult.rows.map((row)=>row.product_id.toString());
+        console.log(`Found ${productIds.length} product assignments for seller ${sellerId}: ${JSON.stringify(productIds)}`);
+        return productIds;
+    } catch (error) {
+        console.error('Error getting product assignments:', error);
+        return [];
+    }
+}
+async function updateSellerProductAssignments(sellerId, productIds) {
+    try {
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        console.log(`Updating product assignments for seller ${sellerId}: ${productIds.length} products`);
+        console.log('Product IDs to assign:', productIds);
+        // Validate that all product IDs are valid UUIDs
+        const validProductIds = [];
+        const invalidProductIds = [];
+        for (const id of productIds){
+            try {
+                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id);
+                validProductIds.push(id);
+            } catch (error) {
+                invalidProductIds.push(id);
+                console.error(`Invalid UUID format for product ${id}`);
+            }
+        }
+        if (invalidProductIds.length > 0) {
+            console.warn(`Filtered out ${invalidProductIds.length} invalid product IDs:`, invalidProductIds);
+            console.log(`Proceeding with ${validProductIds.length} valid product IDs:`, validProductIds);
+        }
+        // First delete all existing assignments
+        const deleteQuery = 'DELETE FROM seller_product_assignments WHERE seller_id = ?';
+        await client.execute(deleteQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId)
+        ], {
+            prepare: true
+        });
+        console.log(`Deleted existing product assignments for seller ${sellerId}`);
+        // Then insert new assignments with valid UUIDs
+        if (validProductIds.length > 0) {
+            try {
+                const insertQuery = 'INSERT INTO seller_product_assignments (seller_id, product_id, assigned_at) VALUES (?, ?, ?)';
+                const now = new Date();
+                // Create batch queries
+                const batch = [];
+                for (const productId of validProductIds){
+                    const sellerUuid = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId);
+                    const productUuid = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(productId);
+                    batch.push({
+                        query: insertQuery,
+                        params: [
+                            sellerUuid,
+                            productUuid,
+                            now
+                        ]
+                    });
+                }
+                console.log(`Executing batch insert with ${batch.length} queries`);
+                if (batch.length > 0) {
+                    // Execute batch with prepare option
+                    await client.batch(batch, {
+                        prepare: true
+                    });
+                    console.log(`Successfully inserted ${batch.length} product assignments`);
+                } else {
+                    console.warn('No valid product IDs to insert');
+                }
+            } catch (batchError) {
+                console.error('Error executing batch insert:', batchError);
+                throw batchError;
+            }
+        }
+        // Verify assignments were saved correctly
+        const verifyQuery = 'SELECT product_id FROM seller_product_assignments WHERE seller_id = ?';
+        const verifyResult = await client.execute(verifyQuery, [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId)
+        ], {
+            prepare: true
+        });
+        const savedProductIds = verifyResult.rows.map((row)=>row.product_id.toString());
+        console.log(`Verification: ${savedProductIds.length} product assignments saved for seller ${sellerId}`);
+        console.log('Saved product IDs:', savedProductIds);
+        return true;
+    } catch (error) {
+        console.error('Error updating seller product assignments:', error);
+        return false;
+    }
+}
+async function getAllAssignedProductIds() {
+    try {
+        console.log('Getting all assigned product IDs from database');
+        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        // Query all product assignments
+        const query = 'SELECT product_id FROM seller_product_assignments';
+        const result = await client.execute(query, [], {
+            prepare: true
+        });
+        // Extract product IDs and remove duplicates
+        const productIds = Array.from(new Set(result.rows.map((row)=>row.product_id.toString())));
+        console.log(`Found ${productIds.length} assigned product IDs in database`);
+        return productIds;
+    } catch (error) {
+        console.error('Error getting all assigned product IDs:', error);
+        return [];
     }
 }
 }}),

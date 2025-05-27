@@ -85,6 +85,16 @@ export async function initializeSchema() {
     )
   `);
   
+  // Create seller_product_assignments table (many-to-many relationship)
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS seller_product_assignments (
+      seller_id uuid,
+      product_id uuid,
+      assigned_at timestamp,
+      PRIMARY KEY (seller_id, product_id)
+    )
+  `);
+  
   // Create seller_documents table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS seller_documents (
