@@ -8,6 +8,7 @@ var { g: global, __dirname, k: __turbopack_refresh__, m: module } = __turbopack_
 __turbopack_context__.s({
     "bulkDeleteSellers": (()=>bulkDeleteSellers),
     "bulkUpdateSellers": (()=>bulkUpdateSellers),
+    "bulkUploadSellers": (()=>bulkUploadSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
     "getFeaturedSellers": (()=>getFeaturedSellers),
@@ -352,6 +353,30 @@ async function getPublicSellerDetails(id) {
         return await response.json();
     } catch (error) {
         console.error(`Error fetching public seller details with ID ${id}:`, error);
+        throw error;
+    }
+}
+async function bulkUploadSellers(sellersData) {
+    try {
+        console.log(`[API CLIENT] Bulk uploading ${sellersData.length} sellers`);
+        const response = await fetch('/api/sellers/bulk-upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sellers: sellersData
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            const errorMessage = data.error || 'Failed to bulk upload sellers';
+            console.error(`[API CLIENT] API error (${response.status}):`, errorMessage);
+            throw new Error(errorMessage);
+        }
+        return data;
+    } catch (error) {
+        console.error('[API CLIENT] Error bulk uploading sellers:', error);
         throw error;
     }
 }
@@ -1330,11 +1355,29 @@ function SellersPage() {
                         lineNumber: 282,
                         columnNumber: 9
                     }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                        href: "/dashboard/sellers/new",
-                        className: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700",
-                        children: "Add Seller"
-                    }, void 0, false, {
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex space-x-3",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                href: "/dashboard/sellers/bulk-upload",
+                                className: "px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700",
+                                children: "Bulk Upload"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/dashboard/sellers/page.tsx",
+                                lineNumber: 284,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                href: "/dashboard/sellers/new",
+                                className: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700",
+                                children: "Add Seller"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/dashboard/sellers/page.tsx",
+                                lineNumber: 290,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
                         lineNumber: 283,
                         columnNumber: 9
@@ -1365,7 +1408,7 @@ function SellersPage() {
                                             className: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 298,
+                                            lineNumber: 306,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1384,33 +1427,33 @@ function SellersPage() {
                                                     d: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 310,
+                                                    lineNumber: 318,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 309,
+                                                lineNumber: 317,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 305,
+                                            lineNumber: 313,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 297,
+                                    lineNumber: 305,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 296,
+                                lineNumber: 304,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                            lineNumber: 295,
+                            lineNumber: 303,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1426,7 +1469,7 @@ function SellersPage() {
                                             children: "All Status"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 325,
+                                            lineNumber: 333,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1434,7 +1477,7 @@ function SellersPage() {
                                             children: "Active"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 326,
+                                            lineNumber: 334,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1442,13 +1485,13 @@ function SellersPage() {
                                             children: "Inactive"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 327,
+                                            lineNumber: 335,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 320,
+                                    lineNumber: 328,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1461,7 +1504,7 @@ function SellersPage() {
                                             children: "All KYC"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 336,
+                                            lineNumber: 344,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1469,7 +1512,7 @@ function SellersPage() {
                                             children: "Verified"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 337,
+                                            lineNumber: 345,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1477,13 +1520,13 @@ function SellersPage() {
                                             children: "Pending"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 338,
+                                            lineNumber: 346,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 331,
+                                    lineNumber: 339,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1496,7 +1539,7 @@ function SellersPage() {
                                             children: "Sort by Name"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 347,
+                                            lineNumber: 355,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1504,7 +1547,7 @@ function SellersPage() {
                                             children: "Sort by Email"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 348,
+                                            lineNumber: 356,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1512,7 +1555,7 @@ function SellersPage() {
                                             children: "Sort by Top Scorer"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 349,
+                                            lineNumber: 357,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1520,13 +1563,13 @@ function SellersPage() {
                                             children: "Sort by Date"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 350,
+                                            lineNumber: 358,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 342,
+                                    lineNumber: 350,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1545,12 +1588,12 @@ function SellersPage() {
                                             d: "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 360,
+                                            lineNumber: 368,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 359,
+                                        lineNumber: 367,
                                         columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
                                         xmlns: "http://www.w3.org/2000/svg",
@@ -1565,34 +1608,34 @@ function SellersPage() {
                                             d: "M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 364,
+                                            lineNumber: 372,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 363,
+                                        lineNumber: 371,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 354,
+                                    lineNumber: 362,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                            lineNumber: 318,
+                            lineNumber: 326,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                    lineNumber: 293,
+                    lineNumber: 301,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                lineNumber: 292,
+                lineNumber: 300,
                 columnNumber: 7
             }, this),
             selectedSellers.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1611,7 +1654,7 @@ function SellersPage() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 376,
+                                lineNumber: 384,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1624,7 +1667,7 @@ function SellersPage() {
                                         children: "Select Action"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 385,
+                                        lineNumber: 393,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1632,7 +1675,7 @@ function SellersPage() {
                                         children: "Update Status"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 386,
+                                        lineNumber: 394,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1640,7 +1683,7 @@ function SellersPage() {
                                         children: "Update KYC"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 387,
+                                        lineNumber: 395,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1648,7 +1691,7 @@ function SellersPage() {
                                         children: "Update Top Scorer"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 388,
+                                        lineNumber: 396,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1656,13 +1699,13 @@ function SellersPage() {
                                         children: "Delete"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 389,
+                                        lineNumber: 397,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 380,
+                                lineNumber: 388,
                                 columnNumber: 13
                             }, this),
                             bulkAction === 'status' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1675,7 +1718,7 @@ function SellersPage() {
                                         children: "Active"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 398,
+                                        lineNumber: 406,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1683,13 +1726,13 @@ function SellersPage() {
                                         children: "Inactive"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 399,
+                                        lineNumber: 407,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 393,
+                                lineNumber: 401,
                                 columnNumber: 15
                             }, this),
                             bulkAction === 'kyc' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1702,7 +1745,7 @@ function SellersPage() {
                                         children: "Verified"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 409,
+                                        lineNumber: 417,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1710,13 +1753,13 @@ function SellersPage() {
                                         children: "Pending"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 410,
+                                        lineNumber: 418,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 404,
+                                lineNumber: 412,
                                 columnNumber: 15
                             }, this),
                             bulkAction === 'topscore' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1731,7 +1774,7 @@ function SellersPage() {
                                         className: "flex-1"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 416,
+                                        lineNumber: 424,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1742,13 +1785,13 @@ function SellersPage() {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 424,
+                                        lineNumber: 432,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 415,
+                                lineNumber: 423,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1758,13 +1801,13 @@ function SellersPage() {
                                 children: isBulkActionLoading ? 'Processing...' : 'Apply'
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 428,
+                                lineNumber: 436,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 375,
+                        lineNumber: 383,
                         columnNumber: 11
                     }, this),
                     bulkActionMessage && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1772,13 +1815,13 @@ function SellersPage() {
                         children: bulkActionMessage.text
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 438,
+                        lineNumber: 446,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                lineNumber: 374,
+                lineNumber: 382,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1791,7 +1834,7 @@ function SellersPage() {
                                 className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 449,
+                                lineNumber: 457,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1799,27 +1842,27 @@ function SellersPage() {
                                 children: "Loading sellers..."
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 450,
+                                lineNumber: 458,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 448,
+                        lineNumber: 456,
                         columnNumber: 11
                     }, this) : error ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "py-8 text-center text-red-600",
                         children: error
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 453,
+                        lineNumber: 461,
                         columnNumber: 11
                     }, this) : sellers.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "py-8 text-center text-gray-600",
                         children: "No sellers found matching your criteria."
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 455,
+                        lineNumber: 463,
                         columnNumber: 11
                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "overflow-x-auto",
@@ -1840,18 +1883,9 @@ function SellersPage() {
                                                     className: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 464,
+                                                    lineNumber: 472,
                                                     columnNumber: 21
                                                 }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 463,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                                scope: "col",
-                                                className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
-                                                children: "Seller"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
                                                 lineNumber: 471,
@@ -1860,10 +1894,19 @@ function SellersPage() {
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                 scope: "col",
                                                 className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                children: "Seller"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/dashboard/sellers/page.tsx",
+                                                lineNumber: 479,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                scope: "col",
+                                                className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
                                                 children: "Business"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 474,
+                                                lineNumber: 482,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1872,7 +1915,7 @@ function SellersPage() {
                                                 children: "Status"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 477,
+                                                lineNumber: 485,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1881,7 +1924,7 @@ function SellersPage() {
                                                 children: "KYC"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 480,
+                                                lineNumber: 488,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1890,7 +1933,7 @@ function SellersPage() {
                                                 children: "Top Scorer"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 483,
+                                                lineNumber: 491,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -1899,18 +1942,18 @@ function SellersPage() {
                                                 children: "Actions"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                lineNumber: 486,
+                                                lineNumber: 494,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 462,
+                                        lineNumber: 470,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 461,
+                                    lineNumber: 469,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -1927,12 +1970,12 @@ function SellersPage() {
                                                         className: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 495,
+                                                        lineNumber: 503,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 494,
+                                                    lineNumber: 502,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1948,19 +1991,19 @@ function SellersPage() {
                                                                     alt: seller.name
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                    lineNumber: 506,
+                                                                    lineNumber: 514,
                                                                     columnNumber: 29
                                                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     className: "h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500",
                                                                     children: seller.name.charAt(0).toUpperCase()
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                    lineNumber: 512,
+                                                                    lineNumber: 520,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                lineNumber: 504,
+                                                                lineNumber: 512,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1971,7 +2014,7 @@ function SellersPage() {
                                                                         children: seller.name
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                        lineNumber: 518,
+                                                                        lineNumber: 526,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1979,7 +2022,7 @@ function SellersPage() {
                                                                         children: seller.email
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                        lineNumber: 521,
+                                                                        lineNumber: 529,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1987,24 +2030,24 @@ function SellersPage() {
                                                                         children: seller.phone
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                        lineNumber: 524,
+                                                                        lineNumber: 532,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                                lineNumber: 517,
+                                                                lineNumber: 525,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 503,
+                                                        lineNumber: 511,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 502,
+                                                    lineNumber: 510,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2014,12 +2057,12 @@ function SellersPage() {
                                                         children: "Business"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 531,
+                                                        lineNumber: 539,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 530,
+                                                    lineNumber: 538,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2030,12 +2073,12 @@ function SellersPage() {
                                                         onSave: handleStatusUpdate
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 537,
+                                                        lineNumber: 545,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 536,
+                                                    lineNumber: 544,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2046,12 +2089,12 @@ function SellersPage() {
                                                         onSave: handleKycUpdate
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 544,
+                                                        lineNumber: 552,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 543,
+                                                    lineNumber: 551,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2062,12 +2105,12 @@ function SellersPage() {
                                                         onSave: handleTopScorerUpdate
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                        lineNumber: 551,
+                                                        lineNumber: 559,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 550,
+                                                    lineNumber: 558,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2079,7 +2122,7 @@ function SellersPage() {
                                                             children: "View"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                            lineNumber: 558,
+                                                            lineNumber: 566,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -2088,7 +2131,7 @@ function SellersPage() {
                                                             children: "Edit"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                            lineNumber: 564,
+                                                            lineNumber: 572,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2099,35 +2142,35 @@ function SellersPage() {
                                                             children: "Delete"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                            lineNumber: 570,
+                                                            lineNumber: 578,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 557,
+                                                    lineNumber: 565,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, seller.id, true, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 493,
+                                            lineNumber: 501,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                    lineNumber: 491,
+                                    lineNumber: 499,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                            lineNumber: 460,
+                            lineNumber: 468,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 459,
+                        lineNumber: 467,
                         columnNumber: 11
                     }, this),
                     totalPages > 1 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2143,7 +2186,7 @@ function SellersPage() {
                                         children: "Previous"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 588,
+                                        lineNumber: 596,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2153,13 +2196,13 @@ function SellersPage() {
                                         children: "Next"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 595,
+                                        lineNumber: 603,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 587,
+                                lineNumber: 595,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2175,7 +2218,7 @@ function SellersPage() {
                                                     children: Math.min(1 + (currentPage - 1) * pageLimit, totalSellers)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 606,
+                                                    lineNumber: 614,
                                                     columnNumber: 27
                                                 }, this),
                                                 " to",
@@ -2185,7 +2228,7 @@ function SellersPage() {
                                                     children: Math.min(currentPage * pageLimit, totalSellers)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 607,
+                                                    lineNumber: 615,
                                                     columnNumber: 19
                                                 }, this),
                                                 " of",
@@ -2195,44 +2238,44 @@ function SellersPage() {
                                                     children: totalSellers
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                                    lineNumber: 608,
+                                                    lineNumber: 616,
                                                     columnNumber: 19
                                                 }, this),
                                                 " results"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                            lineNumber: 605,
+                                            lineNumber: 613,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 604,
+                                        lineNumber: 612,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         children: renderPagination()
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                        lineNumber: 611,
+                                        lineNumber: 619,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                                lineNumber: 603,
+                                lineNumber: 611,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                        lineNumber: 586,
+                        lineNumber: 594,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/dashboard/sellers/page.tsx",
-                lineNumber: 446,
+                lineNumber: 454,
                 columnNumber: 7
             }, this)
         ]

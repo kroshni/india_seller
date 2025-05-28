@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSellerById, updateSeller } from '@/lib/api-client/seller-client';
 import ProductAssignmentForm from '@/components/sellers/ProductAssignmentForm';
+import DocumentUploader from '@/components/sellers/DocumentUploader';
+import GalleryUploader from '@/components/sellers/GalleryUploader';
 import { use } from 'react';
 
 export default function EditSellerPage({ params }: { params: { id: string } }) {
@@ -215,6 +217,22 @@ export default function EditSellerPage({ params }: { params: { id: string } }) {
     }));
   };
   
+  // Handle document changes
+  const handleDocumentsChange = (updatedDocuments: any[]) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: updatedDocuments
+    }));
+  };
+  
+  // Handle gallery changes
+  const handleGalleryChange = (updatedGallery: any[]) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: updatedGallery
+    }));
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,10 +251,6 @@ export default function EditSellerPage({ params }: { params: { id: string } }) {
       
       if (formData.addresses.length === 0 || !formData.addresses[0].addressLine1) {
         throw new Error('At least one address is required');
-      }
-      
-      if (formData.products.length === 0 || !formData.products[0].productName) {
-        throw new Error('At least one product is required');
       }
       
       // Send data to the API
@@ -650,63 +664,22 @@ export default function EditSellerPage({ params }: { params: { id: string } }) {
           ))}
         </div>
         
-        {/* Products */}
+        {/* Documents */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Products</h2>
-            <button
-              type="button"
-              onClick={addProduct}
-              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-            >
-              Add Product
-            </button>
-          </div>
-          
-          {formData.products.map((product: any, index: number) => (
-            <div key={index} className="mb-4 border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-md font-medium">Product {index + 1}</h3>
-                {formData.products.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeProduct(index)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Product Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={product.productName}
-                    onChange={(e) => handleProductChange(index, 'productName', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={product.category}
-                    onChange={(e) => handleProductChange(index, 'category', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Documents</h2>
+          <DocumentUploader 
+            documents={formData.documents} 
+            onChange={handleDocumentsChange} 
+          />
+        </div>
+        
+        {/* Gallery */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Gallery</h2>
+          <GalleryUploader 
+            images={formData.gallery} 
+            onChange={handleGalleryChange} 
+          />
         </div>
         
         {/* Product Assignments */}

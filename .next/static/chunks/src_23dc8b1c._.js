@@ -8,9 +8,11 @@ var { g: global, __dirname, k: __turbopack_refresh__, m: module } = __turbopack_
 __turbopack_context__.s({
     "bulkDeleteSellers": (()=>bulkDeleteSellers),
     "bulkUpdateSellers": (()=>bulkUpdateSellers),
+    "bulkUploadSellers": (()=>bulkUploadSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
     "getFeaturedSellers": (()=>getFeaturedSellers),
+    "getPublicSellerDetails": (()=>getPublicSellerDetails),
     "getSellerById": (()=>getSellerById),
     "getSellerProductAssignments": (()=>getSellerProductAssignments),
     "getSellers": (()=>getSellers),
@@ -335,6 +337,47 @@ async function getFeaturedSellers() {
     } catch (error) {
         console.error('Error fetching featured sellers:', error);
         return [];
+    }
+}
+async function getPublicSellerDetails(id) {
+    try {
+        const response = await fetch(`/api/sellers/${id}/public`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch seller: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching public seller details with ID ${id}:`, error);
+        throw error;
+    }
+}
+async function bulkUploadSellers(sellersData) {
+    try {
+        console.log(`[API CLIENT] Bulk uploading ${sellersData.length} sellers`);
+        const response = await fetch('/api/sellers/bulk-upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sellers: sellersData
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            const errorMessage = data.error || 'Failed to bulk upload sellers';
+            console.error(`[API CLIENT] API error (${response.status}):`, errorMessage);
+            throw new Error(errorMessage);
+        }
+        return data;
+    } catch (error) {
+        console.error('[API CLIENT] Error bulk uploading sellers:', error);
+        throw error;
     }
 }
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
