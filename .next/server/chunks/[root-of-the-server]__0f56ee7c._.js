@@ -578,6 +578,7 @@ async function createSeller(input) {
         ], {
             prepare: true
         });
+        console.log(`Created seller record for ${input.name} with ID ${sellerId}`);
         // Insert business details
         const businessQuery = `
       INSERT INTO seller_business (
@@ -596,90 +597,127 @@ async function createSeller(input) {
         ], {
             prepare: true
         });
+        console.log(`Created business details for seller ${sellerId}`);
         // Insert addresses
         if (input.addresses && input.addresses.length > 0) {
-            const addressQuery = `
-        INSERT INTO seller_addresses (
-          id, seller_id, address_type, address_line1, address_line2, 
-          city, state, postal_code, country, is_default, image
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-            for (const address of input.addresses){
-                const addressId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-                await client.execute(addressQuery, [
-                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(addressId),
-                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
-                    address.addressType,
-                    address.addressLine1,
-                    address.addressLine2 || null,
-                    address.city,
-                    address.state,
-                    address.postalCode,
-                    address.country,
-                    address.isDefault,
-                    address.image || null
-                ], {
-                    prepare: true
-                });
+            try {
+                const addressQuery = `
+          INSERT INTO seller_addresses (
+            id, seller_id, address_type, address_line1, address_line2, 
+            city, state, postal_code, country, is_default, image
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+                for (const address of input.addresses){
+                    const addressId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                    await client.execute(addressQuery, [
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(addressId),
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                        address.addressType,
+                        address.addressLine1,
+                        address.addressLine2 || null,
+                        address.city,
+                        address.state,
+                        address.postalCode,
+                        address.country,
+                        address.isDefault,
+                        address.image || null
+                    ], {
+                        prepare: true
+                    });
+                }
+                console.log(`Created ${input.addresses.length} addresses for seller ${sellerId}`);
+            } catch (error) {
+                console.error(`Error creating addresses for seller ${sellerId}:`, error);
+            // Continue execution - don't fail the entire operation if addresses fail
             }
         }
         // Insert products
-        const productQuery = `
-      INSERT INTO seller_products (
-        id, seller_id, product_name, category
-      )
-      VALUES (?, ?, ?, ?)
-    `;
-        for (const product of input.products){
-            const productId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-            await client.execute(productQuery, [
-                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(productId),
-                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
-                product.productName,
-                product.category
-            ], {
-                prepare: true
-            });
+        if (input.products && input.products.length > 0) {
+            try {
+                const productQuery = `
+          INSERT INTO seller_products (
+            id, seller_id, product_name, category
+          )
+          VALUES (?, ?, ?, ?)
+        `;
+                for (const product of input.products){
+                    const productId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                    await client.execute(productQuery, [
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(productId),
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                        product.productName,
+                        product.category
+                    ], {
+                        prepare: true
+                    });
+                }
+                console.log(`Created ${input.products.length} products for seller ${sellerId}`);
+            } catch (error) {
+                console.error(`Error creating products for seller ${sellerId}:`, error);
+            // Continue execution - don't fail the entire operation if products fail
+            }
         }
         // Insert documents
-        const documentQuery = `
-      INSERT INTO seller_documents (
-        id, seller_id, document_type, document_url, uploaded_at
-      )
-      VALUES (?, ?, ?, ?, ?)
-    `;
-        for (const document of input.documents){
-            const documentId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-            await client.execute(documentQuery, [
-                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(documentId),
-                __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
-                document.documentType,
-                document.documentUrl,
-                now
-            ], {
-                prepare: true
-            });
+        if (input.documents && input.documents.length > 0) {
+            try {
+                const documentQuery = `
+          INSERT INTO seller_documents (
+            id, seller_id, document_type, document_url, uploaded_at
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `;
+                // Track document types to avoid duplicates which would cause primary key conflicts
+                const processedDocTypes = new Set();
+                for (const document of input.documents){
+                    // Skip duplicate document types to avoid primary key conflicts
+                    if (processedDocTypes.has(document.documentType)) {
+                        console.warn(`Skipping duplicate document type: ${document.documentType} for seller ${sellerId}`);
+                        continue;
+                    }
+                    processedDocTypes.add(document.documentType);
+                    const documentId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                    await client.execute(documentQuery, [
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(documentId),
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                        document.documentType,
+                        document.documentUrl,
+                        now
+                    ], {
+                        prepare: true
+                    });
+                }
+                console.log(`Created ${processedDocTypes.size} documents for seller ${sellerId}`);
+            } catch (error) {
+                console.error(`Error creating documents for seller ${sellerId}:`, error);
+            // Continue execution - don't fail the entire operation if documents fail
+            }
         }
         // Insert gallery images
         if (input.gallery && input.gallery.length > 0) {
-            const galleryQuery = `
-        INSERT INTO seller_gallery (
-          id, seller_id, image_url, caption, uploaded_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `;
-            for (const image of input.gallery){
-                const imageId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-                await client.execute(galleryQuery, [
-                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(imageId),
-                    __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
-                    image.imageUrl,
-                    image.caption || null,
-                    now
-                ], {
-                    prepare: true
-                });
+            try {
+                const galleryQuery = `
+          INSERT INTO seller_gallery (
+            id, seller_id, image_url, caption, uploaded_at
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `;
+                for (const image of input.gallery){
+                    const imageId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2f$v4$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+                    await client.execute(galleryQuery, [
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(imageId),
+                        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(sellerId),
+                        image.imageUrl,
+                        image.caption || null,
+                        now
+                    ], {
+                        prepare: true
+                    });
+                }
+                console.log(`Created ${input.gallery.length} gallery images for seller ${sellerId}`);
+            } catch (error) {
+                console.error(`Error creating gallery images for seller ${sellerId}:`, error);
+            // Continue execution - don't fail the entire operation if gallery fails
             }
         }
         return sellerId;
@@ -1310,6 +1348,15 @@ function isValidIFSC(ifsc) {
     const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
     return ifscRegex.test(ifsc);
 }
+// Utility to validate a URL
+function isValidURL(url) {
+    try {
+        new URL(url);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
 function validateSellerRow(row) {
     const errors = [];
     // Required fields check
@@ -1351,33 +1398,36 @@ function validateSellerRow(row) {
             label: 'IFSC Code'
         },
         {
-            key: 'Address Type',
-            label: 'Address Type'
+            key: 'Address1_Type',
+            label: 'Address Type (Primary)'
         },
         {
-            key: 'Address Line 1',
-            label: 'Address Line 1'
+            key: 'Address1_Line1',
+            label: 'Address Line 1 (Primary)'
         },
         {
-            key: 'City',
-            label: 'City'
+            key: 'Address1_City',
+            label: 'City (Primary)'
         },
         {
-            key: 'State',
-            label: 'State'
+            key: 'Address1_State',
+            label: 'State (Primary)'
         },
         {
-            key: 'Postal Code',
-            label: 'Postal Code'
+            key: 'Address1_Postal',
+            label: 'Postal Code (Primary)'
         },
         {
-            key: 'Country',
-            label: 'Country'
+            key: 'Address1_Country',
+            label: 'Country (Primary)'
         }
     ];
     // Check for missing required fields
     requiredFields.forEach((field)=>{
-        const value = row[field.key];
+        // Case insensitive key lookup
+        const fieldKey = Object.keys(row).find((k)=>k.toLowerCase() === field.key.toLowerCase());
+        // Use the found key or fall back to the original key
+        const value = fieldKey ? row[fieldKey] : undefined;
         if (!value || value.toString().trim() === '') {
             errors.push({
                 field: field.label,
@@ -1428,10 +1478,101 @@ function validateSellerRow(row) {
         });
     }
     // Postal code validation (basic check for India)
-    if (row['Postal Code'] && !/^\d{6}$/.test(row['Postal Code']) && row['Country']?.toLowerCase() === 'india') {
+    if (row['Address1_Postal'] && !/^\d{6}$/.test(row['Address1_Postal']) && row['Address1_Country']?.toLowerCase() === 'india') {
         errors.push({
-            field: 'Postal Code',
+            field: 'Address1_Postal',
             message: 'Indian postal code should be 6 digits'
+        });
+    }
+    // Check for additional addresses
+    for(let i = 2; i <= 5; i++){
+        const addressPrefix = `Address${i}_`;
+        // If any field for this address exists, check that required fields are present
+        if (hasAddressFields(row, i)) {
+            const requiredAddressFields = [
+                {
+                    key: `${addressPrefix}Type`,
+                    label: `Address Type (${i})`
+                },
+                {
+                    key: `${addressPrefix}Line1`,
+                    label: `Address Line 1 (${i})`
+                },
+                {
+                    key: `${addressPrefix}City`,
+                    label: `City (${i})`
+                },
+                {
+                    key: `${addressPrefix}State`,
+                    label: `State (${i})`
+                },
+                {
+                    key: `${addressPrefix}Postal`,
+                    label: `Postal Code (${i})`
+                },
+                {
+                    key: `${addressPrefix}Country`,
+                    label: `Country (${i})`
+                }
+            ];
+            requiredAddressFields.forEach((field)=>{
+                const value = row[field.key];
+                if (!value || value.toString().trim() === '') {
+                    errors.push({
+                        field: field.label,
+                        message: `${field.label} is required when adding multiple addresses`
+                    });
+                }
+            });
+            // Postal code validation for additional addresses
+            if (row[`${addressPrefix}Postal`] && !/^\d{6}$/.test(row[`${addressPrefix}Postal`]) && row[`${addressPrefix}Country`]?.toLowerCase() === 'india') {
+                errors.push({
+                    field: `${addressPrefix}Postal`,
+                    message: `Indian postal code should be 6 digits for address ${i}`
+                });
+            }
+        }
+    }
+    // Validate document URLs if provided
+    if (row['Document URLs']) {
+        const documentUrls = row['Document URLs'].split(',').map((url)=>url.trim());
+        // Check if document types are provided
+        if (!row['Document Types']) {
+            errors.push({
+                field: 'Document Types',
+                message: 'Document types must be provided when document URLs are specified'
+            });
+        } else {
+            const documentTypes = row['Document Types'].split(',').map((type)=>type.trim());
+            // Check if counts match
+            if (documentUrls.length !== documentTypes.length) {
+                errors.push({
+                    field: 'Document URLs',
+                    message: 'Number of document URLs must match number of document types'
+                });
+            }
+            // Validate each URL
+            documentUrls.forEach((url, index)=>{
+                if (!isValidURL(url)) {
+                    errors.push({
+                        field: 'Document URLs',
+                        message: `Invalid URL format for document ${index + 1}: ${url}`
+                    });
+                }
+            });
+        }
+    }
+    // Validate gallery URLs if provided
+    if (row['Gallery URLs']) {
+        const galleryUrls = row['Gallery URLs'].split(',').map((url)=>url.trim());
+        // Validate each gallery URL
+        galleryUrls.forEach((url, index)=>{
+            if (!isValidURL(url)) {
+                errors.push({
+                    field: 'Gallery URLs',
+                    message: `Invalid URL format for gallery image ${index + 1}: ${url}`
+                });
+            }
         });
     }
     return {
@@ -1439,31 +1580,95 @@ function validateSellerRow(row) {
         errors
     };
 }
+// Check if any address fields exist for a given address number
+function hasAddressFields(row, addressNum) {
+    const prefix = `Address${addressNum}_`.toLowerCase();
+    return Object.keys(row).some((key)=>key.toLowerCase().startsWith(prefix) && row[key]);
+}
 function formatSellerData(row) {
+    // Helper function for case-insensitive field access
+    const getFieldValue = (fieldName, defaultValue = '')=>{
+        const key = Object.keys(row).find((k)=>k.toLowerCase() === fieldName.toLowerCase());
+        return key ? row[key] : defaultValue;
+    };
+    // Format addresses
+    const addresses = [];
+    // Add primary address
+    addresses.push({
+        addressType: getFieldValue('Address1_Type'),
+        addressLine1: getFieldValue('Address1_Line1'),
+        addressLine2: getFieldValue('Address1_Line2', ''),
+        city: getFieldValue('Address1_City'),
+        state: getFieldValue('Address1_State'),
+        postalCode: getFieldValue('Address1_Postal'),
+        country: getFieldValue('Address1_Country'),
+        isDefault: true,
+        image: getFieldValue('Address1_Image', '')
+    });
+    // Check for additional addresses
+    for(let i = 2; i <= 5; i++){
+        const prefix = `Address${i}_`;
+        if (hasAddressFields(row, i)) {
+            addresses.push({
+                addressType: getFieldValue(`${prefix}Type`),
+                addressLine1: getFieldValue(`${prefix}Line1`),
+                addressLine2: getFieldValue(`${prefix}Line2`, ''),
+                city: getFieldValue(`${prefix}City`),
+                state: getFieldValue(`${prefix}State`),
+                postalCode: getFieldValue(`${prefix}Postal`),
+                country: getFieldValue(`${prefix}Country`),
+                isDefault: false,
+                image: getFieldValue(`${prefix}Image`, '')
+            });
+        }
+    }
+    // Format documents
+    const documents = [];
+    const documentUrls = getFieldValue('Document URLs');
+    const documentTypes = getFieldValue('Document Types');
+    if (documentUrls && documentTypes) {
+        const urlArray = documentUrls.split(',').map((url)=>url.trim());
+        const typeArray = documentTypes.split(',').map((type)=>type.trim());
+        for(let i = 0; i < Math.min(urlArray.length, typeArray.length); i++){
+            documents.push({
+                documentType: typeArray[i],
+                documentUrl: urlArray[i]
+            });
+        }
+    }
+    // Format gallery
+    const gallery = [];
+    const galleryUrls = getFieldValue('Gallery URLs');
+    const galleryCaptions = getFieldValue('Gallery Captions');
+    if (galleryUrls) {
+        const urlArray = galleryUrls.split(',').map((url)=>url.trim());
+        const captionArray = galleryCaptions ? galleryCaptions.split(',').map((caption)=>caption.trim()) : [];
+        for(let i = 0; i < urlArray.length; i++){
+            gallery.push({
+                imageUrl: urlArray[i],
+                caption: i < captionArray.length ? captionArray[i] : ''
+            });
+        }
+    }
+    // Format products - add empty array since we don't have product data in CSV
+    const products = [];
     return {
-        name: row['Name'],
-        email: row['Email'],
-        phone: row['Phone'],
+        name: getFieldValue('Name'),
+        email: getFieldValue('Email'),
+        phone: getFieldValue('Phone'),
+        profilePicture: getFieldValue('Profile Picture', ''),
         business: {
-            companyName: row['Company Name'],
-            gstin: row['GSTIN'],
-            pan: row['PAN'],
-            bankName: row['Bank Name'],
-            accountNumber: row['Account Number'],
-            ifscCode: row['IFSC Code']
+            companyName: getFieldValue('Company Name'),
+            gstin: getFieldValue('GSTIN'),
+            pan: getFieldValue('PAN'),
+            bankName: getFieldValue('Bank Name'),
+            accountNumber: getFieldValue('Account Number'),
+            ifscCode: getFieldValue('IFSC Code')
         },
-        addresses: [
-            {
-                addressType: row['Address Type'],
-                addressLine1: row['Address Line 1'],
-                addressLine2: row['Address Line 2'] || '',
-                city: row['City'],
-                state: row['State'],
-                postalCode: row['Postal Code'],
-                country: row['Country'],
-                isDefault: true
-            }
-        ]
+        addresses,
+        documents,
+        gallery,
+        products
     };
 }
 }}),
@@ -1513,18 +1718,41 @@ async function POST(request) {
             const batchResults = await Promise.allSettled(batch.map(async (rawSellerData, index)=>{
                 const rowIndex = batchStart + index + 1; // +1 for human-readable row number
                 try {
+                    // Log the data we're working with to help debugging
+                    console.log(`Processing row ${rowIndex}, data keys:`, Object.keys(rawSellerData));
                     // Format the seller data to match our API schema
                     const formattedSellerData = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$validations$2f$seller$2d$validation$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["formatSellerData"])(rawSellerData);
+                    // Log the formatted data structure
+                    console.log(`Formatted data for row ${rowIndex}:`, JSON.stringify({
+                        name: formattedSellerData.name,
+                        email: formattedSellerData.email,
+                        hasProducts: Array.isArray(formattedSellerData.products),
+                        numAddresses: formattedSellerData.addresses?.length,
+                        numDocuments: formattedSellerData.documents?.length,
+                        numGalleryItems: formattedSellerData.gallery?.length
+                    }));
                     // Additional validation that might not be caught in the frontend
-                    if (!formattedSellerData.email || !formattedSellerData.name) {
-                        throw new Error('Missing required fields: name or email');
+                    // Case-insensitive field access
+                    const getName = ()=>{
+                        const nameKey = Object.keys(rawSellerData).find((k)=>k.toLowerCase() === 'name');
+                        return nameKey ? rawSellerData[nameKey] : null;
+                    };
+                    const getEmail = ()=>{
+                        const emailKey = Object.keys(rawSellerData).find((k)=>k.toLowerCase() === 'email');
+                        return emailKey ? rawSellerData[emailKey] : null;
+                    };
+                    const name = getName();
+                    const email = getEmail();
+                    if (!name || !email) {
+                        let missingFields = [];
+                        if (!name) missingFields.push('Name');
+                        if (!email) missingFields.push('Email');
+                        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
                     }
-                    // Check for duplicate email (this should be handled by the database but let's catch it earlier)
-                    // This is simplified and would need to be properly implemented with database checks
                     // Create the seller
                     const sellerId = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$services$2f$seller$2d$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createSeller"])(formattedSellerData);
                     if (!sellerId) {
-                        throw new Error('Failed to create seller record');
+                        throw new Error('Failed to create seller record - database operation failed');
                     }
                     return {
                         success: true,
@@ -1532,6 +1760,10 @@ async function POST(request) {
                     };
                 } catch (error) {
                     const message = error instanceof Error ? error.message : 'Unknown error';
+                    console.error(`Error processing row ${rowIndex}:`, message);
+                    if (error instanceof Error && error.stack) {
+                        console.error(`Stack trace for row ${rowIndex}:`, error.stack);
+                    }
                     // Add to failure list
                     results.failures.push({
                         row: rowIndex,
@@ -1573,7 +1805,12 @@ async function POST(request) {
         console.error('Error processing bulk upload:', error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             success: false,
-            error: error instanceof Error ? error.message : 'An unexpected error occurred'
+            message: 'An unexpected error occurred during import',
+            error: error instanceof Error ? error.message : 'An unexpected error occurred',
+            totalProcessed: 0,
+            successCount: 0,
+            failureCount: 0,
+            failures: []
         }, {
             status: 500
         });

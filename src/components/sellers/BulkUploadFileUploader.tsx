@@ -11,24 +11,72 @@ interface FileUploaderProps {
 
 // Simple CSV parser function
 function parseCSV(csv: string): any[] {
+  // Split into lines
   const lines = csv.split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  
+  // Parse headers (first line)
+  const headers = parseCSVLine(lines[0]);
+  console.log("Detected CSV headers:", headers);
+  
   const result: any[] = [];
   
+  // Parse each data line
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue; // Skip empty lines
     
-    const values = lines[i].split(',').map(v => v.trim());
-    const obj: Record<string, any> = {};
+    const values = parseCSVLine(lines[i]);
     
-    headers.forEach((header, index) => {
-      obj[header] = values[index] || '';
-    });
-    
-    result.push(obj);
+    // Create object with header keys
+    if (values.length > 0) {
+      const obj: Record<string, any> = {};
+      headers.forEach((header, index) => {
+        obj[header] = index < values.length ? values[index] : '';
+      });
+      
+      result.push(obj);
+    }
   }
   
   return result;
+}
+
+// Helper function to parse a single CSV line with proper handling of quoted fields
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let currentValue = '';
+  let insideQuote = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = i < line.length - 1 ? line[i + 1] : '';
+    
+    // Handle quotes
+    if (char === '"') {
+      if (insideQuote && nextChar === '"') {
+        // Escaped quote inside quoted field
+        currentValue += '"';
+        i++; // Skip the next quote
+      } else {
+        // Toggle quote state
+        insideQuote = !insideQuote;
+      }
+    }
+    // Handle commas
+    else if (char === ',' && !insideQuote) {
+      // End of field
+      result.push(currentValue);
+      currentValue = '';
+    }
+    // Regular character
+    else {
+      currentValue += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(currentValue);
+  
+  return result.map(val => val.trim());
 }
 
 export default function BulkUploadFileUploader({ 
@@ -55,8 +103,8 @@ export default function BulkUploadFileUploader({
   const EXPECTED_HEADERS = [
     'Name', 'Email', 'Phone', 'Company Name', 'GSTIN', 'PAN', 
     'Bank Name', 'Account Number', 'IFSC Code', 
-    'Address Type', 'Address Line 1', 'Address Line 2', 
-    'City', 'State', 'Postal Code', 'Country'
+    'Address1_Type', 'Address1_Line1', 'Address1_City', 
+    'Address1_State', 'Address1_Postal', 'Address1_Country'
   ];
   
   // Trigger file input click
@@ -166,8 +214,11 @@ export default function BulkUploadFileUploader({
     
     // Check headers
     const firstRow = data[0];
+    const availableHeaders = Object.keys(firstRow).map(header => header.trim());
+    console.log("Available headers in data:", availableHeaders);
+    
     const missingHeaders = EXPECTED_HEADERS.filter(header => 
-      !Object.keys(firstRow).some(key => key.trim().toLowerCase() === header.toLowerCase())
+      !availableHeaders.some(key => key.toLowerCase() === header.toLowerCase())
     );
     
     if (missingHeaders.length > 0) {

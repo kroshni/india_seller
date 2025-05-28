@@ -9,7 +9,7 @@ import ResultSummary from '@/components/sellers/BulkUploadResultSummary';
 import { bulkUploadSellers } from '@/lib/api-client/seller-client';
 
 // Import validation and helper functions
-import { validateSellerRow } from '@/lib/validations/seller-validation';
+import { validateSellerRow, formatSellerData } from '@/lib/validations/seller-validation';
 
 // Define the different states of the import process
 type ImportStatus = 'idle' | 'validating' | 'validated' | 'uploading' | 'success' | 'error';
@@ -50,7 +50,9 @@ export default function BulkUploadPage() {
       const { valid, errors: rowErrors } = validateSellerRow(row);
       
       if (valid) {
-        validRows.push(row);
+        // Format the data for the API
+        const formattedData = formatSellerData(row);
+        validRows.push(formattedData);
       } else {
         rowErrors.forEach(err => {
           validationErrors.push({
@@ -88,9 +90,16 @@ export default function BulkUploadPage() {
   
   // Download sample template
   const handleDownloadSample = () => {
-    const sampleData = `Name,Email,Phone,Company Name,GSTIN,PAN,Bank Name,Account Number,IFSC Code,Address Type,Address Line 1,Address Line 2,City,State,Postal Code,Country
-John Doe,john@example.com,9876543210,Acme Inc.,29ABCDE1234F1Z5,ABCDE1234F,HDFC Bank,1234567890,HDFC0001234,Business,123 Main St,Suite 101,Mumbai,Maharashtra,400001,India
-Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICICI Bank,0987654321,ICIC0005678,Office,456 Park Ave,,Delhi,Delhi,110001,India`;
+    // Define headers with proper format (all in the same case as validation expects)
+    const headers = 'Name,Email,Phone,Company Name,GSTIN,PAN,Bank Name,Account Number,IFSC Code,Profile Picture,Address1_Type,Address1_Line1,Address1_Line2,Address1_City,Address1_State,Address1_Postal,Address1_Country,Address1_Image,Address2_Type,Address2_Line1,Address2_Line2,Address2_City,Address2_State,Address2_Postal,Address2_Country,Address2_Image,Document Types,Document URLs,Gallery URLs,Gallery Captions';
+    
+    // Example 1: Complete seller with multiple addresses and documents
+    const sampleRow1 = '"John Doe","john@example.com","9876543210","Acme Inc.","29ABCDE1234F1Z5","ABCDE1234F","HDFC Bank","1234567890","HDFC0001234","https://example.com/john.jpg","Business","123 Main St","Suite 101","Mumbai","Maharashtra","400001","India","https://example.com/store1.jpg","Warehouse","456 Park Ave","","Delhi","Delhi","110001","India","https://example.com/warehouse1.jpg","GST Certificate,PAN Card","https://example.com/gst.pdf,https://example.com/pan.pdf","https://example.com/gallery1.jpg,https://example.com/gallery2.jpg","Main Store,Product Display"';
+    
+    // Example 2: Seller with only primary address
+    const sampleRow2 = '"Jane Smith","jane@example.com","8765432109","XYZ Corp.","27FGHIJ5678G1Z3","FGHIJ5678G","ICICI Bank","0987654321","ICIC0005678","https://example.com/jane.jpg","Business","456 Park Ave","","Delhi","Delhi","110001","India","","","","","","","","","","Aadhar Card,Business License","https://example.com/aadhar.pdf,https://example.com/license.pdf","https://example.com/gallery3.jpg","Store Front"';
+    
+    const sampleData = `${headers}\n${sampleRow1}\n${sampleRow2}`;
     
     const blob = new Blob([sampleData], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -117,7 +126,10 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
           </Link>
         </div>
         <p className="mt-2 text-sm text-gray-500">
-          Upload multiple sellers at once using a CSV file.
+          Upload multiple sellers at once using a CSV file. 
+          <Link href="/dashboard/sellers/bulk-upload/guide" className="ml-1 text-blue-600 hover:underline">
+            View detailed guide
+          </Link>
         </p>
       </div>
       
@@ -158,6 +170,9 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                       <li>• File must contain required headers</li>
                       <li>• Maximum file size: 5MB</li>
                       <li>• Use the sample template for correct format</li>
+                      <li>• For multiple addresses, use Address1_, Address2_ etc. prefixes</li>
+                      <li>• For documents, use comma-separated values in Document Types and Document URLs</li>
+                      <li>• For gallery images, use comma-separated URLs in Gallery URLs</li>
                     </ul>
                     <button
                       onClick={handleDownloadSample}

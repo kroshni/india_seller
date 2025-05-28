@@ -16,19 +16,56 @@ var _s = __turbopack_context__.k.signature();
 ;
 // Simple CSV parser function
 function parseCSV(csv) {
+    // Split into lines
     const lines = csv.split('\n');
-    const headers = lines[0].split(',').map((h)=>h.trim());
+    // Parse headers (first line)
+    const headers = parseCSVLine(lines[0]);
+    console.log("Detected CSV headers:", headers);
     const result = [];
+    // Parse each data line
     for(let i = 1; i < lines.length; i++){
         if (!lines[i].trim()) continue; // Skip empty lines
-        const values = lines[i].split(',').map((v)=>v.trim());
-        const obj = {};
-        headers.forEach((header, index)=>{
-            obj[header] = values[index] || '';
-        });
-        result.push(obj);
+        const values = parseCSVLine(lines[i]);
+        // Create object with header keys
+        if (values.length > 0) {
+            const obj = {};
+            headers.forEach((header, index)=>{
+                obj[header] = index < values.length ? values[index] : '';
+            });
+            result.push(obj);
+        }
     }
     return result;
+}
+// Helper function to parse a single CSV line with proper handling of quoted fields
+function parseCSVLine(line) {
+    const result = [];
+    let currentValue = '';
+    let insideQuote = false;
+    for(let i = 0; i < line.length; i++){
+        const char = line[i];
+        const nextChar = i < line.length - 1 ? line[i + 1] : '';
+        // Handle quotes
+        if (char === '"') {
+            if (insideQuote && nextChar === '"') {
+                // Escaped quote inside quoted field
+                currentValue += '"';
+                i++; // Skip the next quote
+            } else {
+                // Toggle quote state
+                insideQuote = !insideQuote;
+            }
+        } else if (char === ',' && !insideQuote) {
+            // End of field
+            result.push(currentValue);
+            currentValue = '';
+        } else {
+            currentValue += char;
+        }
+    }
+    // Add the last field
+    result.push(currentValue);
+    return result.map((val)=>val.trim());
 }
 function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled = false }) {
     _s();
@@ -54,13 +91,12 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
         'Bank Name',
         'Account Number',
         'IFSC Code',
-        'Address Type',
-        'Address Line 1',
-        'Address Line 2',
-        'City',
-        'State',
-        'Postal Code',
-        'Country'
+        'Address1_Type',
+        'Address1_Line1',
+        'Address1_City',
+        'Address1_State',
+        'Address1_Postal',
+        'Address1_Country'
     ];
     // Trigger file input click
     const handleButtonClick = ()=>{
@@ -150,7 +186,9 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
         }
         // Check headers
         const firstRow = data[0];
-        const missingHeaders = EXPECTED_HEADERS.filter((header)=>!Object.keys(firstRow).some((key)=>key.trim().toLowerCase() === header.toLowerCase()));
+        const availableHeaders = Object.keys(firstRow).map((header)=>header.trim());
+        console.log("Available headers in data:", availableHeaders);
+        const missingHeaders = EXPECTED_HEADERS.filter((header)=>!availableHeaders.some((key)=>key.toLowerCase() === header.toLowerCase()));
         if (missingHeaders.length > 0) {
             setErrorMessage(`Missing required headers: ${missingHeaders.join(', ')}`);
             setIsProcessing(false);
@@ -172,7 +210,7 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                             className: "animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"
                         }, void 0, false, {
                             fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                            lineNumber: 189,
+                            lineNumber: 240,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -180,18 +218,18 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                             children: "Processing file..."
                         }, void 0, false, {
                             fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                            lineNumber: 190,
+                            lineNumber: 241,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                    lineNumber: 188,
+                    lineNumber: 239,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                lineNumber: 187,
+                lineNumber: 238,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -210,7 +248,7 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                         disabled: disabled
                     }, void 0, false, {
                         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                        lineNumber: 204,
+                        lineNumber: 255,
                         columnNumber: 9
                     }, this),
                     file ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -230,17 +268,17 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                         d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                        lineNumber: 223,
+                                        lineNumber: 274,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                    lineNumber: 216,
+                                    lineNumber: 267,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 215,
+                                lineNumber: 266,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -248,7 +286,7 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                 children: file.name
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 231,
+                                lineNumber: 282,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -259,7 +297,7 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 232,
+                                lineNumber: 283,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -270,13 +308,13 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                 children: "Choose Another File"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 234,
+                                lineNumber: 285,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                        lineNumber: 214,
+                        lineNumber: 265,
                         columnNumber: 11
                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         children: [
@@ -293,12 +331,12 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                     d: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                    lineNumber: 252,
+                                    lineNumber: 303,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 245,
+                                lineNumber: 296,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -313,14 +351,14 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                         children: "browse"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                        lineNumber: 262,
+                                        lineNumber: 313,
                                         columnNumber: 15
                                     }, this),
                                     "to select a file"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 260,
+                                lineNumber: 311,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -328,19 +366,19 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                 children: "Supported format: CSV • Max 5MB"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 273,
+                                lineNumber: 324,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                        lineNumber: 244,
+                        lineNumber: 295,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                lineNumber: 195,
+                lineNumber: 246,
                 columnNumber: 7
             }, this),
             errorMessage && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -361,30 +399,30 @@ function BulkUploadFileUploader({ onFileSelected, onDataParsed, file, disabled =
                                 d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                                lineNumber: 290,
+                                lineNumber: 341,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                            lineNumber: 283,
+                            lineNumber: 334,
                             columnNumber: 13
                         }, this),
                         errorMessage
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                    lineNumber: 282,
+                    lineNumber: 333,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-                lineNumber: 281,
+                lineNumber: 332,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/sellers/BulkUploadFileUploader.tsx",
-        lineNumber: 185,
+        lineNumber: 236,
         columnNumber: 5
     }, this);
 }
@@ -1854,6 +1892,15 @@ function isValidIFSC(ifsc) {
     const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
     return ifscRegex.test(ifsc);
 }
+// Utility to validate a URL
+function isValidURL(url) {
+    try {
+        new URL(url);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
 function validateSellerRow(row) {
     const errors = [];
     // Required fields check
@@ -1895,33 +1942,36 @@ function validateSellerRow(row) {
             label: 'IFSC Code'
         },
         {
-            key: 'Address Type',
-            label: 'Address Type'
+            key: 'Address1_Type',
+            label: 'Address Type (Primary)'
         },
         {
-            key: 'Address Line 1',
-            label: 'Address Line 1'
+            key: 'Address1_Line1',
+            label: 'Address Line 1 (Primary)'
         },
         {
-            key: 'City',
-            label: 'City'
+            key: 'Address1_City',
+            label: 'City (Primary)'
         },
         {
-            key: 'State',
-            label: 'State'
+            key: 'Address1_State',
+            label: 'State (Primary)'
         },
         {
-            key: 'Postal Code',
-            label: 'Postal Code'
+            key: 'Address1_Postal',
+            label: 'Postal Code (Primary)'
         },
         {
-            key: 'Country',
-            label: 'Country'
+            key: 'Address1_Country',
+            label: 'Country (Primary)'
         }
     ];
     // Check for missing required fields
     requiredFields.forEach((field)=>{
-        const value = row[field.key];
+        // Case insensitive key lookup
+        const fieldKey = Object.keys(row).find((k)=>k.toLowerCase() === field.key.toLowerCase());
+        // Use the found key or fall back to the original key
+        const value = fieldKey ? row[fieldKey] : undefined;
         if (!value || value.toString().trim() === '') {
             errors.push({
                 field: field.label,
@@ -1972,10 +2022,101 @@ function validateSellerRow(row) {
         });
     }
     // Postal code validation (basic check for India)
-    if (row['Postal Code'] && !/^\d{6}$/.test(row['Postal Code']) && row['Country']?.toLowerCase() === 'india') {
+    if (row['Address1_Postal'] && !/^\d{6}$/.test(row['Address1_Postal']) && row['Address1_Country']?.toLowerCase() === 'india') {
         errors.push({
-            field: 'Postal Code',
+            field: 'Address1_Postal',
             message: 'Indian postal code should be 6 digits'
+        });
+    }
+    // Check for additional addresses
+    for(let i = 2; i <= 5; i++){
+        const addressPrefix = `Address${i}_`;
+        // If any field for this address exists, check that required fields are present
+        if (hasAddressFields(row, i)) {
+            const requiredAddressFields = [
+                {
+                    key: `${addressPrefix}Type`,
+                    label: `Address Type (${i})`
+                },
+                {
+                    key: `${addressPrefix}Line1`,
+                    label: `Address Line 1 (${i})`
+                },
+                {
+                    key: `${addressPrefix}City`,
+                    label: `City (${i})`
+                },
+                {
+                    key: `${addressPrefix}State`,
+                    label: `State (${i})`
+                },
+                {
+                    key: `${addressPrefix}Postal`,
+                    label: `Postal Code (${i})`
+                },
+                {
+                    key: `${addressPrefix}Country`,
+                    label: `Country (${i})`
+                }
+            ];
+            requiredAddressFields.forEach((field)=>{
+                const value = row[field.key];
+                if (!value || value.toString().trim() === '') {
+                    errors.push({
+                        field: field.label,
+                        message: `${field.label} is required when adding multiple addresses`
+                    });
+                }
+            });
+            // Postal code validation for additional addresses
+            if (row[`${addressPrefix}Postal`] && !/^\d{6}$/.test(row[`${addressPrefix}Postal`]) && row[`${addressPrefix}Country`]?.toLowerCase() === 'india') {
+                errors.push({
+                    field: `${addressPrefix}Postal`,
+                    message: `Indian postal code should be 6 digits for address ${i}`
+                });
+            }
+        }
+    }
+    // Validate document URLs if provided
+    if (row['Document URLs']) {
+        const documentUrls = row['Document URLs'].split(',').map((url)=>url.trim());
+        // Check if document types are provided
+        if (!row['Document Types']) {
+            errors.push({
+                field: 'Document Types',
+                message: 'Document types must be provided when document URLs are specified'
+            });
+        } else {
+            const documentTypes = row['Document Types'].split(',').map((type)=>type.trim());
+            // Check if counts match
+            if (documentUrls.length !== documentTypes.length) {
+                errors.push({
+                    field: 'Document URLs',
+                    message: 'Number of document URLs must match number of document types'
+                });
+            }
+            // Validate each URL
+            documentUrls.forEach((url, index)=>{
+                if (!isValidURL(url)) {
+                    errors.push({
+                        field: 'Document URLs',
+                        message: `Invalid URL format for document ${index + 1}: ${url}`
+                    });
+                }
+            });
+        }
+    }
+    // Validate gallery URLs if provided
+    if (row['Gallery URLs']) {
+        const galleryUrls = row['Gallery URLs'].split(',').map((url)=>url.trim());
+        // Validate each gallery URL
+        galleryUrls.forEach((url, index)=>{
+            if (!isValidURL(url)) {
+                errors.push({
+                    field: 'Gallery URLs',
+                    message: `Invalid URL format for gallery image ${index + 1}: ${url}`
+                });
+            }
         });
     }
     return {
@@ -1983,31 +2124,95 @@ function validateSellerRow(row) {
         errors
     };
 }
+// Check if any address fields exist for a given address number
+function hasAddressFields(row, addressNum) {
+    const prefix = `Address${addressNum}_`.toLowerCase();
+    return Object.keys(row).some((key)=>key.toLowerCase().startsWith(prefix) && row[key]);
+}
 function formatSellerData(row) {
+    // Helper function for case-insensitive field access
+    const getFieldValue = (fieldName, defaultValue = '')=>{
+        const key = Object.keys(row).find((k)=>k.toLowerCase() === fieldName.toLowerCase());
+        return key ? row[key] : defaultValue;
+    };
+    // Format addresses
+    const addresses = [];
+    // Add primary address
+    addresses.push({
+        addressType: getFieldValue('Address1_Type'),
+        addressLine1: getFieldValue('Address1_Line1'),
+        addressLine2: getFieldValue('Address1_Line2', ''),
+        city: getFieldValue('Address1_City'),
+        state: getFieldValue('Address1_State'),
+        postalCode: getFieldValue('Address1_Postal'),
+        country: getFieldValue('Address1_Country'),
+        isDefault: true,
+        image: getFieldValue('Address1_Image', '')
+    });
+    // Check for additional addresses
+    for(let i = 2; i <= 5; i++){
+        const prefix = `Address${i}_`;
+        if (hasAddressFields(row, i)) {
+            addresses.push({
+                addressType: getFieldValue(`${prefix}Type`),
+                addressLine1: getFieldValue(`${prefix}Line1`),
+                addressLine2: getFieldValue(`${prefix}Line2`, ''),
+                city: getFieldValue(`${prefix}City`),
+                state: getFieldValue(`${prefix}State`),
+                postalCode: getFieldValue(`${prefix}Postal`),
+                country: getFieldValue(`${prefix}Country`),
+                isDefault: false,
+                image: getFieldValue(`${prefix}Image`, '')
+            });
+        }
+    }
+    // Format documents
+    const documents = [];
+    const documentUrls = getFieldValue('Document URLs');
+    const documentTypes = getFieldValue('Document Types');
+    if (documentUrls && documentTypes) {
+        const urlArray = documentUrls.split(',').map((url)=>url.trim());
+        const typeArray = documentTypes.split(',').map((type)=>type.trim());
+        for(let i = 0; i < Math.min(urlArray.length, typeArray.length); i++){
+            documents.push({
+                documentType: typeArray[i],
+                documentUrl: urlArray[i]
+            });
+        }
+    }
+    // Format gallery
+    const gallery = [];
+    const galleryUrls = getFieldValue('Gallery URLs');
+    const galleryCaptions = getFieldValue('Gallery Captions');
+    if (galleryUrls) {
+        const urlArray = galleryUrls.split(',').map((url)=>url.trim());
+        const captionArray = galleryCaptions ? galleryCaptions.split(',').map((caption)=>caption.trim()) : [];
+        for(let i = 0; i < urlArray.length; i++){
+            gallery.push({
+                imageUrl: urlArray[i],
+                caption: i < captionArray.length ? captionArray[i] : ''
+            });
+        }
+    }
+    // Format products - add empty array since we don't have product data in CSV
+    const products = [];
     return {
-        name: row['Name'],
-        email: row['Email'],
-        phone: row['Phone'],
+        name: getFieldValue('Name'),
+        email: getFieldValue('Email'),
+        phone: getFieldValue('Phone'),
+        profilePicture: getFieldValue('Profile Picture', ''),
         business: {
-            companyName: row['Company Name'],
-            gstin: row['GSTIN'],
-            pan: row['PAN'],
-            bankName: row['Bank Name'],
-            accountNumber: row['Account Number'],
-            ifscCode: row['IFSC Code']
+            companyName: getFieldValue('Company Name'),
+            gstin: getFieldValue('GSTIN'),
+            pan: getFieldValue('PAN'),
+            bankName: getFieldValue('Bank Name'),
+            accountNumber: getFieldValue('Account Number'),
+            ifscCode: getFieldValue('IFSC Code')
         },
-        addresses: [
-            {
-                addressType: row['Address Type'],
-                addressLine1: row['Address Line 1'],
-                addressLine2: row['Address Line 2'] || '',
-                city: row['City'],
-                state: row['State'],
-                postalCode: row['Postal Code'],
-                country: row['Country'],
-                isDefault: true
-            }
-        ]
+        addresses,
+        documents,
+        gallery,
+        products
     };
 }
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
@@ -2073,7 +2278,9 @@ function BulkUploadPage() {
             const rowNumber = index + 2; // +2 because index starts at 0 and we need to account for the header row
             const { valid, errors: rowErrors } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$validations$2f$seller$2d$validation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["validateSellerRow"])(row);
             if (valid) {
-                validRows.push(row);
+                // Format the data for the API
+                const formattedData = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$validations$2f$seller$2d$validation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["formatSellerData"])(row);
+                validRows.push(formattedData);
             } else {
                 rowErrors.forEach((err)=>{
                     validationErrors.push({
@@ -2107,9 +2314,13 @@ function BulkUploadPage() {
     };
     // Download sample template
     const handleDownloadSample = ()=>{
-        const sampleData = `Name,Email,Phone,Company Name,GSTIN,PAN,Bank Name,Account Number,IFSC Code,Address Type,Address Line 1,Address Line 2,City,State,Postal Code,Country
-John Doe,john@example.com,9876543210,Acme Inc.,29ABCDE1234F1Z5,ABCDE1234F,HDFC Bank,1234567890,HDFC0001234,Business,123 Main St,Suite 101,Mumbai,Maharashtra,400001,India
-Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICICI Bank,0987654321,ICIC0005678,Office,456 Park Ave,,Delhi,Delhi,110001,India`;
+        // Define headers with proper format (all in the same case as validation expects)
+        const headers = 'Name,Email,Phone,Company Name,GSTIN,PAN,Bank Name,Account Number,IFSC Code,Profile Picture,Address1_Type,Address1_Line1,Address1_Line2,Address1_City,Address1_State,Address1_Postal,Address1_Country,Address1_Image,Address2_Type,Address2_Line1,Address2_Line2,Address2_City,Address2_State,Address2_Postal,Address2_Country,Address2_Image,Document Types,Document URLs,Gallery URLs,Gallery Captions';
+        // Example 1: Complete seller with multiple addresses and documents
+        const sampleRow1 = '"John Doe","john@example.com","9876543210","Acme Inc.","29ABCDE1234F1Z5","ABCDE1234F","HDFC Bank","1234567890","HDFC0001234","https://example.com/john.jpg","Business","123 Main St","Suite 101","Mumbai","Maharashtra","400001","India","https://example.com/store1.jpg","Warehouse","456 Park Ave","","Delhi","Delhi","110001","India","https://example.com/warehouse1.jpg","GST Certificate,PAN Card","https://example.com/gst.pdf,https://example.com/pan.pdf","https://example.com/gallery1.jpg,https://example.com/gallery2.jpg","Main Store,Product Display"';
+        // Example 2: Seller with only primary address
+        const sampleRow2 = '"Jane Smith","jane@example.com","8765432109","XYZ Corp.","27FGHIJ5678G1Z3","FGHIJ5678G","ICICI Bank","0987654321","ICIC0005678","https://example.com/jane.jpg","Business","456 Park Ave","","Delhi","Delhi","110001","India","","","","","","","","","","Aadhar Card,Business License","https://example.com/aadhar.pdf,https://example.com/license.pdf","https://example.com/gallery3.jpg","Store Front"';
+        const sampleData = `${headers}\n${sampleRow1}\n${sampleRow2}`;
         const blob = new Blob([
             sampleData
         ], {
@@ -2138,7 +2349,7 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                 children: "Bulk Upload Sellers"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                lineNumber: 111,
+                                lineNumber: 120,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -2147,27 +2358,38 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                 children: "Back to Sellers"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                lineNumber: 112,
+                                lineNumber: 121,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                        lineNumber: 110,
+                        lineNumber: 119,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         className: "mt-2 text-sm text-gray-500",
-                        children: "Upload multiple sellers at once using a CSV file."
-                    }, void 0, false, {
+                        children: [
+                            "Upload multiple sellers at once using a CSV file.",
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                href: "/dashboard/sellers/bulk-upload/guide",
+                                className: "ml-1 text-blue-600 hover:underline",
+                                children: "View detailed guide"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
+                                lineNumber: 130,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                        lineNumber: 119,
+                        lineNumber: 128,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                lineNumber: 109,
+                lineNumber: 118,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2185,7 +2407,7 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                     onGoToSellers: ()=>router.push('/dashboard/sellers')
                 }, void 0, false, {
                     fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                    lineNumber: 127,
+                    lineNumber: 139,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                     children: [
@@ -2197,7 +2419,7 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                     children: "Upload File"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                    lineNumber: 143,
+                                    lineNumber: 155,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2212,12 +2434,12 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                                 disabled: importStatus === 'validating' || importStatus === 'uploading'
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                lineNumber: 146,
+                                                lineNumber: 158,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                            lineNumber: 145,
+                                            lineNumber: 157,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2229,7 +2451,7 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                                         children: "Instructions"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                        lineNumber: 155,
+                                                        lineNumber: 167,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -2239,34 +2461,55 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                                                 children: "• Upload a CSV file"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                                lineNumber: 157,
+                                                                lineNumber: 169,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                                                 children: "• File must contain required headers"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                                lineNumber: 158,
+                                                                lineNumber: 170,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                                                 children: "• Maximum file size: 5MB"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                                lineNumber: 159,
+                                                                lineNumber: 171,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
                                                                 children: "• Use the sample template for correct format"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                                lineNumber: 160,
+                                                                lineNumber: 172,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                                children: "• For multiple addresses, use Address1_, Address2_ etc. prefixes"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
+                                                                lineNumber: 173,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                                children: "• For documents, use comma-separated values in Document Types and Document URLs"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
+                                                                lineNumber: 174,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                                children: "• For gallery images, use comma-separated URLs in Gallery URLs"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
+                                                                lineNumber: 175,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                        lineNumber: 156,
+                                                        lineNumber: 168,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2275,30 +2518,30 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                                                         children: "Download Sample Template"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                        lineNumber: 162,
+                                                        lineNumber: 177,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                                lineNumber: 154,
+                                                lineNumber: 166,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                            lineNumber: 153,
+                                            lineNumber: 165,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                                    lineNumber: 144,
+                                    lineNumber: 156,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                            lineNumber: 142,
+                            lineNumber: 154,
                             columnNumber: 13
                         }, this),
                         parsedData.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$sellers$2f$BulkUploadPreview$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -2309,20 +2552,20 @@ Jane Smith,jane@example.com,8765432109,XYZ Corp.,27FGHIJ5678G1Z3,FGHIJ5678G,ICIC
                             onImport: handleImport
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                            lineNumber: 175,
+                            lineNumber: 190,
                             columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true)
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-                lineNumber: 125,
+                lineNumber: 137,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/dashboard/sellers/bulk-upload/page.tsx",
-        lineNumber: 107,
+        lineNumber: 116,
         columnNumber: 5
     }, this);
 }

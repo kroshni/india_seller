@@ -1,18 +1,9 @@
 {
-  "/api/products/unassigned/route": "app/api/products/unassigned/route.js",
-  "/api/sellers/[id]/products/route": "app/api/sellers/[id]/products/route.js",
-  "/api/sellers/[id]/route": "app/api/sellers/[id]/route.js",
+  "/api/sellers/bulk-upload/route": "app/api/sellers/bulk-upload/route.js",
   "/api/sellers/featured/route": "app/api/sellers/featured/route.js",
   "/api/sellers/route": "app/api/sellers/route.js",
-  "/dashboard/products/add/page": "app/dashboard/products/add/page.js",
-  "/dashboard/products/add/simple/page": "app/dashboard/products/add/simple/page.js",
-  "/dashboard/products/assignments/page": "app/dashboard/products/assignments/page.js",
-  "/dashboard/products/page": "app/dashboard/products/page.js",
-  "/dashboard/sellers/[id]/edit/page": "app/dashboard/sellers/[id]/edit/page.js",
-  "/dashboard/sellers/[id]/page": "app/dashboard/sellers/[id]/page.js",
   "/dashboard/sellers/bulk-upload/page": "app/dashboard/sellers/bulk-upload/page.js",
   "/dashboard/sellers/page": "app/dashboard/sellers/page.js",
-  "/dashboard/sellers/products/page": "app/dashboard/sellers/products/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js"
 }

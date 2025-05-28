@@ -414,6 +414,8 @@ export async function createSeller(input: CreateSellerInput): Promise<string | n
       { prepare: true }
     );
     
+    console.log(`Created seller record for ${input.name} with ID ${sellerId}`);
+    
     // Insert business details
     const businessQuery = `
       INSERT INTO seller_business (
@@ -436,105 +438,146 @@ export async function createSeller(input: CreateSellerInput): Promise<string | n
       { prepare: true }
     );
     
+    console.log(`Created business details for seller ${sellerId}`);
+    
     // Insert addresses
     if (input.addresses && input.addresses.length > 0) {
-      const addressQuery = `
-        INSERT INTO seller_addresses (
-          id, seller_id, address_type, address_line1, address_line2, 
-          city, state, postal_code, country, is_default, image
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      
-      for (const address of input.addresses) {
-        const addressId = uuidv4();
-        await client.execute(
-          addressQuery,
-          [
-            types.Uuid.fromString(addressId),
-            types.Uuid.fromString(sellerId),
-            address.addressType,
-            address.addressLine1,
-            address.addressLine2 || null,
-            address.city,
-            address.state,
-            address.postalCode,
-            address.country,
-            address.isDefault,
-            address.image || null
-          ],
-          { prepare: true }
-        );
+      try {
+        const addressQuery = `
+          INSERT INTO seller_addresses (
+            id, seller_id, address_type, address_line1, address_line2, 
+            city, state, postal_code, country, is_default, image
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        for (const address of input.addresses) {
+          const addressId = uuidv4();
+          await client.execute(
+            addressQuery,
+            [
+              types.Uuid.fromString(addressId),
+              types.Uuid.fromString(sellerId),
+              address.addressType,
+              address.addressLine1,
+              address.addressLine2 || null,
+              address.city,
+              address.state,
+              address.postalCode,
+              address.country,
+              address.isDefault,
+              address.image || null
+            ],
+            { prepare: true }
+          );
+        }
+        console.log(`Created ${input.addresses.length} addresses for seller ${sellerId}`);
+      } catch (error) {
+        console.error(`Error creating addresses for seller ${sellerId}:`, error);
+        // Continue execution - don't fail the entire operation if addresses fail
       }
     }
     
     // Insert products
-    const productQuery = `
-      INSERT INTO seller_products (
-        id, seller_id, product_name, category
-      )
-      VALUES (?, ?, ?, ?)
-    `;
-    
-    for (const product of input.products) {
-      const productId = uuidv4();
-      await client.execute(
-        productQuery,
-        [
-          types.Uuid.fromString(productId),
-          types.Uuid.fromString(sellerId),
-          product.productName,
-          product.category
-        ],
-        { prepare: true }
-      );
+    if (input.products && input.products.length > 0) {
+      try {
+        const productQuery = `
+          INSERT INTO seller_products (
+            id, seller_id, product_name, category
+          )
+          VALUES (?, ?, ?, ?)
+        `;
+        
+        for (const product of input.products) {
+          const productId = uuidv4();
+          await client.execute(
+            productQuery,
+            [
+              types.Uuid.fromString(productId),
+              types.Uuid.fromString(sellerId),
+              product.productName,
+              product.category
+            ],
+            { prepare: true }
+          );
+        }
+        console.log(`Created ${input.products.length} products for seller ${sellerId}`);
+      } catch (error) {
+        console.error(`Error creating products for seller ${sellerId}:`, error);
+        // Continue execution - don't fail the entire operation if products fail
+      }
     }
     
     // Insert documents
-    const documentQuery = `
-      INSERT INTO seller_documents (
-        id, seller_id, document_type, document_url, uploaded_at
-      )
-      VALUES (?, ?, ?, ?, ?)
-    `;
-    
-    for (const document of input.documents) {
-      const documentId = uuidv4();
-      await client.execute(
-        documentQuery,
-        [
-          types.Uuid.fromString(documentId),
-          types.Uuid.fromString(sellerId),
-          document.documentType,
-          document.documentUrl,
-          now
-        ],
-        { prepare: true }
-      );
+    if (input.documents && input.documents.length > 0) {
+      try {
+        const documentQuery = `
+          INSERT INTO seller_documents (
+            id, seller_id, document_type, document_url, uploaded_at
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        // Track document types to avoid duplicates which would cause primary key conflicts
+        const processedDocTypes = new Set();
+        
+        for (const document of input.documents) {
+          // Skip duplicate document types to avoid primary key conflicts
+          if (processedDocTypes.has(document.documentType)) {
+            console.warn(`Skipping duplicate document type: ${document.documentType} for seller ${sellerId}`);
+            continue;
+          }
+          
+          processedDocTypes.add(document.documentType);
+          const documentId = uuidv4();
+          
+          await client.execute(
+            documentQuery,
+            [
+              types.Uuid.fromString(documentId),
+              types.Uuid.fromString(sellerId),
+              document.documentType,
+              document.documentUrl,
+              now
+            ],
+            { prepare: true }
+          );
+        }
+        console.log(`Created ${processedDocTypes.size} documents for seller ${sellerId}`);
+      } catch (error) {
+        console.error(`Error creating documents for seller ${sellerId}:`, error);
+        // Continue execution - don't fail the entire operation if documents fail
+      }
     }
     
     // Insert gallery images
     if (input.gallery && input.gallery.length > 0) {
-      const galleryQuery = `
-        INSERT INTO seller_gallery (
-          id, seller_id, image_url, caption, uploaded_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `;
-      
-      for (const image of input.gallery) {
-        const imageId = uuidv4();
-        await client.execute(
-          galleryQuery,
-          [
-            types.Uuid.fromString(imageId),
-            types.Uuid.fromString(sellerId),
-            image.imageUrl,
-            image.caption || null,
-            now
-          ],
-          { prepare: true }
-        );
+      try {
+        const galleryQuery = `
+          INSERT INTO seller_gallery (
+            id, seller_id, image_url, caption, uploaded_at
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        for (const image of input.gallery) {
+          const imageId = uuidv4();
+          await client.execute(
+            galleryQuery,
+            [
+              types.Uuid.fromString(imageId),
+              types.Uuid.fromString(sellerId),
+              image.imageUrl,
+              image.caption || null,
+              now
+            ],
+            { prepare: true }
+          );
+        }
+        console.log(`Created ${input.gallery.length} gallery images for seller ${sellerId}`);
+      } catch (error) {
+        console.error(`Error creating gallery images for seller ${sellerId}:`, error);
+        // Continue execution - don't fail the entire operation if gallery fails
       }
     }
     
@@ -1133,4 +1176,4 @@ export async function getAllAssignedProductIds(): Promise<string[]> {
     console.error('Error getting all assigned product IDs:', error);
     return [];
   }
-} 
+}
