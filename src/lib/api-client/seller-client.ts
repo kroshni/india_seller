@@ -375,4 +375,47 @@ export async function updateSellerProductAssignments(
     console.error('[API CLIENT] Error updating seller product assignments:', error);
     throw error;
   }
+}
+
+// Get featured sellers
+export async function getFeaturedSellers(): Promise<Seller[]> {
+  try {
+    const response = await fetch('/api/sellers/featured', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch featured sellers: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.sellers;
+  } catch (error) {
+    console.error('Error fetching featured sellers:', error);
+    return [];
+  }
+}
+
+// Get public seller details (excluding confidential data)
+export async function getPublicSellerDetails(id: string): Promise<any> {
+  try {
+    const response = await fetch(`/api/sellers/${id}/public`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch seller: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching public seller details with ID ${id}:`, error);
+    throw error;
+  }
 } 

@@ -342,9 +342,10 @@ async function getAllSellers(filters = {}) {
         if (filters.status && filters.status !== 'All') {
             query += ' WHERE status = ?';
             queryParams.push(filters.status);
+            // Add ALLOW FILTERING clause for Cassandra
+            query += ' ALLOW FILTERING';
         }
-        // Note: Cassandra doesn't support complex WHERE clauses like in SQL
-        // For advanced filtering, we'll need to fetch all and filter in memory
+        console.log('Executing query:', query, 'with params:', queryParams);
         // Execute the query
         const result = await client.execute(query, queryParams, {
             prepare: true

@@ -10,6 +10,8 @@ __turbopack_context__.s({
     "bulkUpdateSellers": (()=>bulkUpdateSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
+    "getFeaturedSellers": (()=>getFeaturedSellers),
+    "getPublicSellerDetails": (()=>getPublicSellerDetails),
     "getSellerById": (()=>getSellerById),
     "getSellerProductAssignments": (()=>getSellerProductAssignments),
     "getSellers": (()=>getSellers),
@@ -315,6 +317,41 @@ async function updateSellerProductAssignments(sellerId, productIds) {
         return data.success;
     } catch (error) {
         console.error('[API CLIENT] Error updating seller product assignments:', error);
+        throw error;
+    }
+}
+async function getFeaturedSellers() {
+    try {
+        const response = await fetch('/api/sellers/featured', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch featured sellers: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.sellers;
+    } catch (error) {
+        console.error('Error fetching featured sellers:', error);
+        return [];
+    }
+}
+async function getPublicSellerDetails(id) {
+    try {
+        const response = await fetch(`/api/sellers/${id}/public`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch seller: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching public seller details with ID ${id}:`, error);
         throw error;
     }
 }

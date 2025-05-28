@@ -1820,6 +1820,7 @@ __turbopack_context__.s({
     "bulkUpdateSellers": (()=>bulkUpdateSellers),
     "createSeller": (()=>createSeller),
     "deleteSeller": (()=>deleteSeller),
+    "getFeaturedSellers": (()=>getFeaturedSellers),
     "getSellerById": (()=>getSellerById),
     "getSellerProductAssignments": (()=>getSellerProductAssignments),
     "getSellers": (()=>getSellers),
@@ -2126,6 +2127,24 @@ async function updateSellerProductAssignments(sellerId, productIds) {
     } catch (error) {
         console.error('[API CLIENT] Error updating seller product assignments:', error);
         throw error;
+    }
+}
+async function getFeaturedSellers() {
+    try {
+        const response = await fetch('/api/sellers/featured', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch featured sellers: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.sellers;
+    } catch (error) {
+        console.error('Error fetching featured sellers:', error);
+        return [];
     }
 }
 }}),
