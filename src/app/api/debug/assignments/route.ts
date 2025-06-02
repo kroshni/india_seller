@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAssignedProductIds } from '@/lib/services/seller-service';
 import { getAllProducts } from '@/lib/services/product-service';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Get all assigned product IDs
     const assignedProductIds = await getAllAssignedProductIds();
     
@@ -37,4 +48,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

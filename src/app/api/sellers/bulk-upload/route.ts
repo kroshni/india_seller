@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSeller } from '@/lib/services/seller-service';
 import { formatSellerData } from '@/lib/validations/seller-validation';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Parse the request body
     const body = await request.json();
     const { sellers } = body;
@@ -156,4 +167,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

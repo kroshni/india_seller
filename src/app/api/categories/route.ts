@@ -4,10 +4,21 @@ import {
   createCategory,
   CategoryCreateInput
 } from '@/lib/services/category-service';
+import { authenticateRequest } from '@/lib/auth';
 
 // GET - Fetch all categories
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const categories = await getAllCategories();
     
     return NextResponse.json({ categories }, { 
@@ -30,6 +41,16 @@ export async function GET(request: NextRequest) {
 // POST - Create a new category
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const data = await request.json();
     
     // Validate required fields
@@ -67,4 +88,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

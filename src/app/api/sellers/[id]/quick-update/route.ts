@@ -80,17 +80,15 @@ export async function PUT(
     const resolvedParams = await params;
     const id = resolvedParams.id;
     
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
-    if (!user || user.role !== 'admin') {
+    
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized access' },
         { status: 401 }
       );
     }
-    */
     
     const data = await request.json();
     
@@ -143,4 +141,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-} 
+}

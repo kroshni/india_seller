@@ -14,18 +14,15 @@ export async function GET(
     
     console.log(`Getting product assignments for seller: ${sellerId}`);
     
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
     
     if (!user) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    */
     
     // Get the seller to verify it exists
     const seller = await getSellerById(sellerId);
@@ -63,18 +60,15 @@ export async function POST(
     
     console.log('Processing product assignment update for seller:', sellerId);
     
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
     
     if (!user) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    */
     
     // Get the request body
     const body = await request.json();
@@ -222,4 +216,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

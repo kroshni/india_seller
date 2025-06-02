@@ -5,6 +5,7 @@ import {
   deleteCategory,
   CategoryUpdateInput 
 } from '@/lib/services/category-service';
+import { authenticateRequest } from '@/lib/auth';
 
 // GET - Fetch a single category by ID
 export async function GET(
@@ -12,6 +13,16 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const id = context.params.id;
     
     if (!id) {
@@ -53,6 +64,16 @@ export async function PUT(
   context: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const id = context.params.id;
     
     if (!id) {
@@ -106,6 +127,16 @@ export async function DELETE(
   context: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const id = context.params.id;
     
     if (!id) {
@@ -132,4 +163,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

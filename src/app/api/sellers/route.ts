@@ -21,6 +21,15 @@ const authenticateRequest = async (request: NextRequest) => {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Parse query parameters for filtering, pagination, and sorting
     const searchParams = request.nextUrl.searchParams;
     const filters: SellerFilters = {
@@ -81,6 +90,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const data = await request.json();
     
     // Basic validation
@@ -124,6 +142,15 @@ export async function POST(request: NextRequest) {
 // For bulk operations
 export async function PATCH(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const data: SellerBulkUpdateInput = await request.json();
     
     if (!data.sellerIds || !Array.isArray(data.sellerIds) || data.sellerIds.length === 0) {
@@ -166,6 +193,15 @@ export async function PATCH(request: NextRequest) {
 // For bulk deletion
 export async function DELETE(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const data = await request.json();
     
     if (!data.sellerIds || !Array.isArray(data.sellerIds) || data.sellerIds.length === 0) {
@@ -195,4 +231,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

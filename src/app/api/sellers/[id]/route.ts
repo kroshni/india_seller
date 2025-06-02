@@ -30,6 +30,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Use await on params to ensure it's fully resolved
     const resolvedParams = await params;
     const id = resolvedParams.id;
@@ -70,18 +80,15 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
     
     if (!user) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    */
     
     // Use await on params to ensure it's fully resolved
     const resolvedParams = await params;
@@ -133,18 +140,15 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
     
     if (!user) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    */
     
     // Use await on params to ensure it's fully resolved
     const resolvedParams = await params;
@@ -230,18 +234,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Skip authentication for now to make development easier
-    // Uncomment this for production
-    /*
+    // Check authentication
     const user = await authenticateRequest(request);
     
     if (!user) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    */
     
     // Use await on params to ensure it's fully resolved
     const resolvedParams = await params;
@@ -284,4 +285,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

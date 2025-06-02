@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///D:/python/GC/indiaSellerNextJs_cursor/indiaseller2/src/components/providers/SessionProvider.tsx"],"sourcesContent":["'use client';\r\n\r\nimport { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';\r\n\r\nexport default function SessionProvider({ children }: { children: React.ReactNode }) {\r\n  return <NextAuthSessionProvider>{children}</NextAuthSessionProvider>;\r\n}"],"names":[],"mappings":";;;;AAEA;AAFA;;;AAIe,SAAS,gBAAgB,EAAE,QAAQ,EAAiC;IACjF,qBAAO,8OAAC,8IAAA,CAAA,kBAAuB;kBAAE;;;;;;AACnC","debugId":null}}]
+}

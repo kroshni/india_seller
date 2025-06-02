@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllSellers } from '@/lib/services/seller-service';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     console.log('Fetching featured sellers');
     
     // First try to get high-scoring sellers (top tier)
@@ -64,4 +75,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

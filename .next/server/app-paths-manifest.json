@@ -1,9 +1,7 @@
 {
-  "/api/sellers/bulk-upload/route": "app/api/sellers/bulk-upload/route.js",
-  "/api/sellers/featured/route": "app/api/sellers/featured/route.js",
-  "/api/sellers/route": "app/api/sellers/route.js",
-  "/dashboard/sellers/bulk-upload/page": "app/dashboard/sellers/bulk-upload/page.js",
-  "/dashboard/sellers/page": "app/dashboard/sellers/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/page": "app/page.js"
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/customers/auth/logout/route": "app/api/customers/auth/logout/route.js",
+  "/api/customers/profile/route": "app/api/customers/profile/route.js",
+  "/customer/dashboard/page": "app/customer/dashboard/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }

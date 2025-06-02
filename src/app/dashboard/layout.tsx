@@ -12,21 +12,15 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Default to true for now
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until authenticated
   
   useEffect(() => {
-    // Since we're using mock data and no real authentication,
-    // we'll just set authenticated to true and skip the auth check
-    setIsLoading(false);
-    setIsAuthenticated(true);
-    
-    // In a real app with authentication, you would uncomment this:
-    /*
+    // Check authentication status
     const checkAuth = async () => {
       try {
         setIsLoading(true);
         
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch('/api/sellers', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -49,7 +43,6 @@ export default function DashboardLayout({
     };
     
     checkAuth();
-    */
   }, [router]);
   
   // Show loading state while checking authentication
@@ -87,4 +80,4 @@ export default function DashboardLayout({
       </div>
     </div>
   );
-} 
+}

@@ -10,6 +10,7 @@ A full-stack admin panel for seller management using Next.js (App Router) and Ap
 - 📄 Listing page with filtering options
 - 🔍 Detailed seller views
 - 📝 Form-based seller creation and editing
+- 📋 Customer requirements management
 - 🖼️ Image/document upload support
 - 🚀 Responsive design with Tailwind CSS
 

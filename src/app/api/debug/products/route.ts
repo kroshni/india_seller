@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProducts } from '@/lib/services/product-service';
 import { isDbConnected } from '@/lib/db/cassandra';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Get all products with a higher limit to check what's available
     const productsResponse = await getAllProducts({ limit: 100 });
     
@@ -34,4 +45,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

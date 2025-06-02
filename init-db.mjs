@@ -108,6 +108,48 @@ async function initializeDatabase() {
       )
     `);
     
+    // Create customers table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id uuid PRIMARY KEY,
+        name text,
+        email text,
+        phone text,
+        profile_picture text,
+        status text,
+        created_at timestamp,
+        updated_at timestamp
+      )
+    `);
+    
+    // Create customer_addresses table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS customer_addresses (
+        id uuid PRIMARY KEY,
+        customer_id uuid,
+        address_type text,
+        address_line1 text,
+        address_line2 text,
+        city text,
+        state text,
+        postal_code text,
+        country text,
+        is_default boolean
+      )
+    `);
+    
+    // Create customer_documents table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS customer_documents (
+        id uuid,
+        customer_id uuid,
+        document_type text,
+        document_url text,
+        uploaded_at timestamp,
+        PRIMARY KEY (customer_id, document_type)
+      )
+    `);
+    
     console.log('Tables created successfully');
     
     // Delete existing admin user
@@ -153,4 +195,4 @@ initializeDatabase()
   .catch((error) => {
     console.error('Database setup failed:', error);
     process.exit(1);
-  }); 
+  });

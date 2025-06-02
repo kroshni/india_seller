@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateCategoryStatus } from '@/lib/services/category-service';
+import { authenticateRequest } from '@/lib/auth';
 
 // PATCH - Update category status
 export async function PATCH(
@@ -7,6 +8,16 @@ export async function PATCH(
   context: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // In Next.js 14+, params is not a promise, so we don't need to await it
     const id = context.params.id;
     
@@ -44,4 +55,4 @@ export async function PATCH(
       { status: 500 }
     );
   }
-} 
+}

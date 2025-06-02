@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSellerById } from '@/lib/services/seller-service';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const resolvedParams = await params;
     const id = resolvedParams.id;
     
@@ -66,4 +77,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

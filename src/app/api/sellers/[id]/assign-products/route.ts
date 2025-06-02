@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateSellerProductAssignments } from '@/lib/services/seller-service';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Make sure we have a seller ID
     const resolvedParams = await params;
     const sellerId = resolvedParams.id;
@@ -52,4 +63,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

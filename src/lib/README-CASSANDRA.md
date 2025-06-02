@@ -26,20 +26,21 @@ By default, when `NODE_ENV` is not set to `production`, the application uses an 
 
 ## Required Schema
 
-The application requires the following table structure:
+The following tables are required for the application to function properly:
 
-```sql
-CREATE TABLE IF NOT EXISTS categories (
-  id uuid PRIMARY KEY,
-  name text,
-  slug text,
-  description text,
-  status text,
-  product_count int,
-  created_at timestamp,
-  updated_at timestamp
-);
-```
+- `sellers`
+- `seller_business`
+- `seller_products`
+- `seller_documents`
+- `customers`
+- `customer_addresses`
+- `customer_documents`
+- `customer_requirements`
+- `products`
+- `categories`
+- `brands`
+- `orders`
+- `order_items`
 
 The application will automatically create these tables on startup if they don't exist.
 
@@ -55,4 +56,4 @@ To create the keyspace:
 
 ```bash
 docker exec -it india-seller-cassandra cqlsh -e "CREATE KEYSPACE IF NOT EXISTS india_seller WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
-``` 
+```

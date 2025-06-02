@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllProducts } from '@/lib/services/product-service';
 import { getAllAssignedProductIds } from '@/lib/services/seller-service';
 import { isDbConnected } from '@/lib/db/cassandra';
+import { authenticateRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Check database connection
     const dbConnected = isDbConnected();
     
@@ -67,4 +78,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProducts } from '@/lib/services/product-service';
 import { getAllAssignedProductIds } from '@/lib/services/seller-service';
+import { authenticateRequest } from '@/lib/auth';
 
 // Mock product IDs for testing
 const mockProductIds = [
@@ -12,6 +13,16 @@ const mockProductIds = [
 // GET /api/products/unassigned - Returns products that are not assigned to any seller
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const user = await authenticateRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     console.log('Fetching unassigned products (products not assigned to any seller)');
     
     // 1. Get all assigned product IDs (products that are already assigned to any seller)
@@ -40,4 +51,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
