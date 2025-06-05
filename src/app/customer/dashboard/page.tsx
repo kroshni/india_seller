@@ -9,8 +9,11 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     const fetchCustomerData = async () => {
+      setIsLoading(true);
+      setError(null);
+      console.log('Dashboard: Fetching customer profile data...');
+      
       try {
-        setIsLoading(true);
         const response = await fetch('/api/customers/profile', {
           method: 'GET',
           headers: {
@@ -18,16 +21,32 @@ export default function CustomerDashboard() {
           },
           cache: 'no-store'
         });
-
+        console.log('Dashboard: API response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch customer data');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Dashboard: API error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: errorData
+          });
+          
+          // Set more specific error message based on status code
+          if (response.status === 401) {
+            throw new Error('Authentication failed. Please log in again.');
+          } else if (response.status === 404) {
+            throw new Error('Customer profile not found. Please contact support.');
+          } else {
+            throw new Error(`Failed to fetch customer data: ${response.statusText || 'Unknown error'}`);
+          }
         }
-
+        
         const data = await response.json();
+        console.log('Dashboard: Customer data received successfully');
         setCustomerData(data);
-      } catch (err) {
-        console.error('Error fetching customer data:', err);
-        setError('Unable to load your information. Please try again later.');
+      } catch (error) {
+        console.error('Dashboard: Error fetching customer data:', error);
+        setError(error instanceof Error ? error.message : 'Unable to load your information. Please try again later.');
       } finally {
         setIsLoading(false);
       }

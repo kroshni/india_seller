@@ -179,21 +179,37 @@ export async function getCustomerById(id: string): Promise<{
   try {
     console.log(`Getting customer details for ID: ${id}`);
     
-    const client = await getClient();
+    // Get database client
+    let client;
+    try {
+      console.log('Connecting to Cassandra database...');
+      client = await getClient();
+      console.log('Database connection successful');
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      throw new Error('Database connection failed');
+    }
     
     // Attempt to convert ID to UUID
     let uuidId;
     try {
       uuidId = types.Uuid.fromString(id);
+      console.log('UUID conversion successful:', uuidId.toString());
     } catch (uuidError) {
       console.error(`Invalid UUID format for ID: ${id}`, uuidError);
       return null;
     }
     
     // Get customer personal details
+    console.log('Executing customer query with ID:', uuidId.toString());
     const customerQuery = 'SELECT * FROM customers WHERE id = ?';
-    const customerResult = await client.execute(customerQuery, [uuidId], { prepare: true });
+    const customerResult = await client.execute(customerQuery, [uuidId], { prepare: true })
+      .catch(err => {
+        console.error('Customer query execution error:', err);
+        throw new Error('Database query failed');
+      });
     
+    console.log('Customer query result rows:', customerResult.rowLength);
     if (customerResult.rowLength === 0) {
       console.log(`No customer found in database with ID: ${id}`);
       return null;

@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader } from '@/components/ui/Loader';
+import { Loader } from '@/components/ui/loader';
 
 export default function ProductAssignmentsPage() {
   // State for sellers dropdown
@@ -344,4 +344,4 @@ export default function ProductAssignmentsPage() {
       </div>
     </DashboardShell>
   );
-} 
+}

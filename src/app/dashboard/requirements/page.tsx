@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, Eye } from 'lucide-react';
 

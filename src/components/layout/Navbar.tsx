@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AdminCustomerAccess } from '@/components/ui/admin-customer-access';
 
 export default function Navbar() {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -38,6 +40,30 @@ export default function Navbar() {
     }
   };
   
+  // Check if the current user is an admin
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const response = await fetch('/api/sellers', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.user?.role || null);
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+      }
+    };
+    
+    checkUserRole();
+  }, []);
+
   return (
     <nav className="bg-blue-700 text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,6 +89,12 @@ export default function Navbar() {
               Sellers
             </Link>
             
+            {userRole === 'admin' && (
+              <div className="px-3 py-2">
+                <AdminCustomerAccess />
+              </div>
+            )}
+            
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
@@ -75,4 +107,4 @@ export default function Navbar() {
       </div>
     </nav>
   );
-} 
+}

@@ -30,6 +30,18 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // If no query parameters are provided, just return the authenticated user info
+    // This is used by the Navbar component to check the user role
+    if (request.nextUrl.searchParams.size === 0) {
+      return NextResponse.json({
+        user: {
+          email: (user as any).email,
+          name: (user as any).name,
+          role: (user as any).role
+        }
+      });
+    }
+    
     // Parse query parameters for filtering, pagination, and sorting
     const searchParams = request.nextUrl.searchParams;
     const filters: SellerFilters = {

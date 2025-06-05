@@ -97,6 +97,7 @@ function CustomerLoginPage() {
         setIsLoading(true);
         setError(null);
         try {
+            console.log('Login: Attempting to sign in with credentials');
             // Use NextAuth signIn function instead of direct API call
             const result = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["signIn"])('credentials', {
                 email: data.email,
@@ -104,15 +105,41 @@ function CustomerLoginPage() {
                 redirect: false,
                 callbackUrl: '/customer/dashboard'
             });
+            console.log('Login: NextAuth sign in result:', result?.error ? 'Error: ' + result.error : 'Success');
             if (result?.error) {
                 setError(result.error || 'Login failed');
                 return;
+            }
+            // After successful NextAuth login, also set the custom JWT token
+            console.log('Login: NextAuth login successful, setting custom JWT token');
+            try {
+                // Call our custom login endpoint to set the JWT cookie
+                const customTokenResponse = await fetch('/api/customers/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: data.email,
+                        password: data.password
+                    })
+                });
+                console.log('Login: Custom token API response status:', customTokenResponse.status);
+                if (!customTokenResponse.ok) {
+                    console.warn('Login: Failed to set custom JWT token, but NextAuth login succeeded');
+                // Continue anyway since NextAuth login succeeded
+                } else {
+                    console.log('Login: Custom JWT token set successfully');
+                }
+            } catch (tokenErr) {
+                console.error('Login: Error setting custom JWT token:', tokenErr);
+            // Continue anyway since NextAuth login succeeded
             }
             // Redirect to customer dashboard on successful login
             router.replace('/customer/dashboard');
         } catch (err) {
             setError('An error occurred during login');
-            console.error(err);
+            console.error('Login: Error during login process:', err);
         } finally{
             setIsLoading(false);
         }
@@ -128,7 +155,7 @@ function CustomerLoginPage() {
                         className: "inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"
                     }, void 0, false, {
                         fileName: "[project]/src/app/customer/login/page.tsx",
-                        lineNumber: 101,
+                        lineNumber: 134,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -136,18 +163,18 @@ function CustomerLoginPage() {
                         children: "Loading..."
                     }, void 0, false, {
                         fileName: "[project]/src/app/customer/login/page.tsx",
-                        lineNumber: 102,
+                        lineNumber: 135,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/customer/login/page.tsx",
-                lineNumber: 100,
+                lineNumber: 133,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/customer/login/page.tsx",
-            lineNumber: 99,
+            lineNumber: 132,
             columnNumber: 7
         }, this);
     }
@@ -164,7 +191,7 @@ function CustomerLoginPage() {
                             children: "Customer Login"
                         }, void 0, false, {
                             fileName: "[project]/src/app/customer/login/page.tsx",
-                            lineNumber: 112,
+                            lineNumber: 145,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -172,13 +199,13 @@ function CustomerLoginPage() {
                             children: "Sign in to your customer account"
                         }, void 0, false, {
                             fileName: "[project]/src/app/customer/login/page.tsx",
-                            lineNumber: 113,
+                            lineNumber: 146,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/customer/login/page.tsx",
-                    lineNumber: 111,
+                    lineNumber: 144,
                     columnNumber: 9
                 }, this),
                 error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -186,7 +213,7 @@ function CustomerLoginPage() {
                     children: error
                 }, void 0, false, {
                     fileName: "[project]/src/app/customer/login/page.tsx",
-                    lineNumber: 117,
+                    lineNumber: 150,
                     columnNumber: 11
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -201,7 +228,7 @@ function CustomerLoginPage() {
                                     children: "Email"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 124,
+                                    lineNumber: 157,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -218,7 +245,7 @@ function CustomerLoginPage() {
                                     disabled: isLoading
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 127,
+                                    lineNumber: 160,
                                     columnNumber: 13
                                 }, this),
                                 errors.email && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -226,13 +253,13 @@ function CustomerLoginPage() {
                                     children: errors.email.message
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 141,
+                                    lineNumber: 174,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/customer/login/page.tsx",
-                            lineNumber: 123,
+                            lineNumber: 156,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -243,7 +270,7 @@ function CustomerLoginPage() {
                                     children: "Password"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 146,
+                                    lineNumber: 179,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -256,7 +283,7 @@ function CustomerLoginPage() {
                                     disabled: isLoading
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 149,
+                                    lineNumber: 182,
                                     columnNumber: 13
                                 }, this),
                                 errors.password && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -264,13 +291,13 @@ function CustomerLoginPage() {
                                     children: errors.password.message
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/customer/login/page.tsx",
-                                    lineNumber: 157,
+                                    lineNumber: 190,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/customer/login/page.tsx",
-                            lineNumber: 145,
+                            lineNumber: 178,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -280,13 +307,13 @@ function CustomerLoginPage() {
                             children: isLoading ? 'Signing in...' : 'Sign In'
                         }, void 0, false, {
                             fileName: "[project]/src/app/customer/login/page.tsx",
-                            lineNumber: 161,
+                            lineNumber: 194,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/customer/login/page.tsx",
-                    lineNumber: 122,
+                    lineNumber: 155,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -300,29 +327,29 @@ function CustomerLoginPage() {
                                 children: "Register here"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/customer/login/page.tsx",
-                                lineNumber: 171,
+                                lineNumber: 204,
                                 columnNumber: 37
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/customer/login/page.tsx",
-                        lineNumber: 171,
+                        lineNumber: 204,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/customer/login/page.tsx",
-                    lineNumber: 170,
+                    lineNumber: 203,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/customer/login/page.tsx",
-            lineNumber: 110,
+            lineNumber: 143,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/customer/login/page.tsx",
-        lineNumber: 109,
+        lineNumber: 142,
         columnNumber: 5
     }, this);
 }

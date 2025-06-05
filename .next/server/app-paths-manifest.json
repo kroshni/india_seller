@@ -1,7 +1,14 @@
 {
+  "/api/admin/requirements/[id]/route": "app/api/admin/requirements/[id]/route.js",
+  "/api/admin/requirements/route": "app/api/admin/requirements/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/customers/auth/logout/route": "app/api/customers/auth/logout/route.js",
-  "/api/customers/profile/route": "app/api/customers/profile/route.js",
-  "/customer/dashboard/page": "app/customer/dashboard/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/api/customers/requirements/route": "app/api/customers/requirements/route.js",
+  "/api/sellers/featured/route": "app/api/sellers/featured/route.js",
+  "/api/sellers/route": "app/api/sellers/route.js",
+  "/customer/dashboard/requirements/page": "app/customer/dashboard/requirements/page.js",
+  "/dashboard/products/page": "app/dashboard/products/page.js",
+  "/dashboard/requirements/[id]/page": "app/dashboard/requirements/[id]/page.js",
+  "/dashboard/requirements/page": "app/dashboard/requirements/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
 }

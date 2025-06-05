@@ -5,7 +5,7 @@ runtime.loadChunk("server/chunks/ssr/[root-of-the-server]__4c58c055._.js");
 runtime.loadChunk("server/chunks/ssr/src_app_a4430781._.js");
 runtime.loadChunk("server/chunks/ssr/node_modules_cassandra-driver_ea444aa4._.js");
 runtime.loadChunk("server/chunks/ssr/node_modules_9ca89471._.js");
-runtime.loadChunk("server/chunks/ssr/[root-of-the-server]__006f2f99._.js");
+runtime.loadChunk("server/chunks/ssr/[root-of-the-server]__b92053ef._.js");
 runtime.loadChunk("server/chunks/ssr/node_modules_96715ba7._.js");
 runtime.loadChunk("server/chunks/ssr/node_modules_next_dist_client_components_forbidden-error_ea7ea172.js");
 runtime.loadChunk("server/chunks/ssr/_5f904819._.js");

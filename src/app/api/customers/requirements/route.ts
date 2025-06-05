@@ -11,9 +11,18 @@ import {
 // Retrieves all requirements for the authenticated customer
 export async function GET(request: NextRequest) {
   try {
+    console.log('Requirements API: Request received');
+    
+    // Check if the customer-auth-token cookie exists
+    const authToken = request.cookies.get('customer-auth-token');
+    console.log('Requirements API: Customer auth check - Token exists:', !!authToken);
+    
     // Check customer authentication
     const user = await authenticateCustomerRequest(request);
+    console.log('Requirements API: Authentication result:', user ? 'Authenticated' : 'Not authenticated');
+    
     if (!user) {
+      console.log('Requirements API: Unauthorized access attempt');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

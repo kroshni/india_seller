@@ -2,7 +2,7 @@ import { getClient } from './db/cassandra';
 import { compare, hash } from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { NextRequest } from 'next/server';
-import { verify } from 'jsonwebtoken';
+import { verify, sign } from 'jsonwebtoken';
 import { types } from 'cassandra-driver';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -174,18 +174,57 @@ export const authenticateRequest = async (request: NextRequest) => {
   }
 };
 
-// Middleware to check if customer is authenticated
-export const authenticateCustomerRequest = async (request: NextRequest) => {
-  const token = request.cookies.get('customer-auth-token')?.value;
+// Middleware to check if seller/admin is authenticated
+export const authenticateSellerRequest = async (request: NextRequest) => {
+  const token = request.cookies.get('auth-token')?.value;
+  
+  console.log('Seller auth check - Token exists:', !!token);
   
   if (!token) {
+    console.log('Seller authentication failed: No token found');
     return null;
   }
   
   try {
-    const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    console.log('Verifying token with secret:', secret ? 'Secret exists' : 'No secret');
+    
+    const decoded = verify(token, secret) as any;
+    console.log('Token verified successfully, user:', decoded.email || 'unknown');
+    
+    // Check if the user has the correct role (admin or seller)
+    if (decoded.role !== 'admin' && decoded.role !== 'seller') {
+      console.log('User does not have admin or seller role:', decoded.role);
+      return null;
+    }
+    
     return decoded;
   } catch (error) {
+    console.error('Token verification failed:', error);
+    return null;
+  }
+};
+
+// Middleware to check if customer is authenticated
+export const authenticateCustomerRequest = async (request: NextRequest) => {
+  const token = request.cookies.get('customer-auth-token')?.value;
+  
+  console.log('Customer auth check - Token exists:', !!token);
+  
+  if (!token) {
+    console.log('Customer authentication failed: No token found');
+    return null;
+  }
+  
+  try {
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    console.log('Verifying token with secret:', secret ? 'Secret exists' : 'No secret');
+    
+    const decoded = verify(token, secret);
+    console.log('Token verified successfully, user:', (decoded as any).email || 'unknown');
+    return decoded;
+  } catch (error) {
+    console.error('Token verification failed:', error);
     return null;
   }
 };
@@ -206,11 +245,13 @@ export const authOptions: NextAuthOptions = {
         const user = await authenticateCustomer(credentials.email, credentials.password);
         
         if (user) {
+          // Store the customerId in the user object to be used in the JWT callback
           return {
             id: user.customerId,
             email: user.email,
             name: user.name,
-            role: user.role
+            role: user.role,
+            customerId: user.customerId // Add customerId explicitly
           };
         }
 
@@ -231,6 +272,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.email = user.email;
+        token.name = user.name;
+        token.customerId = user.customerId; // Store customerId in the token
       }
       return token;
     },
@@ -238,8 +282,36 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.customerId = token.customerId as string; // Add customerId to session
       }
       return session;
+    }
+  },
+  events: {
+    async signIn({ user, account }) {
+      // When a user signs in, create a custom JWT token and set it as a cookie
+      if (user && user.customerId) {
+        try {
+          // This will be executed on the server side
+          const token = sign(
+            {
+              email: user.email,
+              name: user.name,
+              role: 'customer',
+              customerId: user.customerId
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '1d' }
+          );
+          
+          // Note: We can't directly set cookies here as this runs on the server
+          // The cookie will be set in a middleware or API route
+          // We'll store this in the token to be used later
+          console.log('Created custom JWT token for user:', user.email);
+        } catch (error) {
+          console.error('Error creating custom JWT token:', error);
+        }
+      }
     }
   }
 };

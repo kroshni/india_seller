@@ -28,7 +28,7 @@ export type ProductUpdateInput = Partial<Omit<Product, 'id' | 'createdAt' | 'upd
 
 // Sample mock data for products
 const mockProducts: Product[] = [
-  {
+  /*{
     id: '550e8400-e29b-41d4-a716-446655440100',
     sku: 'TSH-001',
     name: 'Basic Cotton T-Shirt',
@@ -187,7 +187,7 @@ const mockProducts: Product[] = [
     ],
     createdAt: new Date(2023, 1, 15).toISOString(),
     updatedAt: new Date(2023, 1, 15).toISOString()
-  }
+  } */
 ];
 
 // Initialize mock data

@@ -352,6 +352,29 @@ async function initializeSchema() {
       PRIMARY KEY (customer_id, document_type)
     )
   `);
+    // Create customer_requirements table
+    await client.execute(`
+    CREATE TABLE IF NOT EXISTS customer_requirements (
+      id uuid,
+      customer_id text,
+      customer_name text,
+      product_name text,
+      details text,
+      email text,
+      status text,
+      created_at timestamp,
+      updated_at timestamp,
+      PRIMARY KEY (id)
+    )
+  `);
+    // Create index on customer_id for faster lookups
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (customer_id)
+  `);
+    // Create index on status for filtering
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (status)
+  `);
     // Create users table for authentication
     await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -380,6 +403,7 @@ __turbopack_context__.s({
     "authenticateCustomer": (()=>authenticateCustomer),
     "authenticateCustomerRequest": (()=>authenticateCustomerRequest),
     "authenticateRequest": (()=>authenticateRequest),
+    "authenticateSellerRequest": (()=>authenticateSellerRequest),
     "authenticateUser": (()=>authenticateUser),
     "createCustomerUser": (()=>createCustomerUser),
     "createUser": (()=>createUser),
@@ -555,15 +579,44 @@ const authenticateRequest = async (request)=>{
         return null;
     }
 };
-const authenticateCustomerRequest = async (request)=>{
-    const token = request.cookies.get('customer-auth-token')?.value;
+const authenticateSellerRequest = async (request)=>{
+    const token = request.cookies.get('auth-token')?.value;
+    console.log('Seller auth check - Token exists:', !!token);
     if (!token) {
+        console.log('Seller authentication failed: No token found');
         return null;
     }
     try {
-        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, process.env.JWT_SECRET || 'your-secret-key');
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        console.log('Verifying token with secret:', ("TURBOPACK compile-time truthy", 1) ? 'Secret exists' : ("TURBOPACK unreachable", undefined));
+        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, secret);
+        console.log('Token verified successfully, user:', decoded.email || 'unknown');
+        // Check if the user has the correct role (admin or seller)
+        if (decoded.role !== 'admin' && decoded.role !== 'seller') {
+            console.log('User does not have admin or seller role:', decoded.role);
+            return null;
+        }
         return decoded;
     } catch (error) {
+        console.error('Token verification failed:', error);
+        return null;
+    }
+};
+const authenticateCustomerRequest = async (request)=>{
+    const token = request.cookies.get('customer-auth-token')?.value;
+    console.log('Customer auth check - Token exists:', !!token);
+    if (!token) {
+        console.log('Customer authentication failed: No token found');
+        return null;
+    }
+    try {
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        console.log('Verifying token with secret:', ("TURBOPACK compile-time truthy", 1) ? 'Secret exists' : ("TURBOPACK unreachable", undefined));
+        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, secret);
+        console.log('Token verified successfully, user:', decoded.email || 'unknown');
+        return decoded;
+    } catch (error) {
+        console.error('Token verification failed:', error);
         return null;
     }
 };
@@ -587,11 +640,13 @@ const authOptions = {
                 }
                 const user = await authenticateCustomer(credentials.email, credentials.password);
                 if (user) {
+                    // Store the customerId in the user object to be used in the JWT callback
                     return {
                         id: user.customerId,
                         email: user.email,
                         name: user.name,
-                        role: user.role
+                        role: user.role,
+                        customerId: user.customerId // Add customerId explicitly
                     };
                 }
                 return null;
@@ -611,6 +666,9 @@ const authOptions = {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
+                token.email = user.email;
+                token.name = user.name;
+                token.customerId = user.customerId; // Store customerId in the token
             }
             return token;
         },
@@ -618,8 +676,33 @@ const authOptions = {
             if (session.user) {
                 session.user.id = token.id;
                 session.user.role = token.role;
+                session.user.customerId = token.customerId; // Add customerId to session
             }
             return session;
+        }
+    },
+    events: {
+        async signIn ({ user, account }) {
+            // When a user signs in, create a custom JWT token and set it as a cookie
+            if (user && user.customerId) {
+                try {
+                    // This will be executed on the server side
+                    const token = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["sign"])({
+                        email: user.email,
+                        name: user.name,
+                        role: 'customer',
+                        customerId: user.customerId
+                    }, process.env.JWT_SECRET || 'your-secret-key', {
+                        expiresIn: '1d'
+                    });
+                    // Note: We can't directly set cookies here as this runs on the server
+                    // The cookie will be set in a middleware or API route
+                    // We'll store this in the token to be used later
+                    console.log('Created custom JWT token for user:', user.email);
+                } catch (error) {
+                    console.error('Error creating custom JWT token:', error);
+                }
+            }
         }
     }
 };

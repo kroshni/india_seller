@@ -533,13 +533,19 @@ const authenticateRequest = async (request)=>{
 };
 const authenticateCustomerRequest = async (request)=>{
     const token = request.cookies.get('customer-auth-token')?.value;
+    console.log('Customer auth check - Token exists:', !!token);
     if (!token) {
+        console.log('Customer authentication failed: No token found');
         return null;
     }
     try {
-        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, process.env.JWT_SECRET || 'your-secret-key');
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        console.log('Verifying token with secret:', ("TURBOPACK compile-time truthy", 1) ? 'Secret exists' : ("TURBOPACK unreachable", undefined));
+        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, secret);
+        console.log('Token verified successfully, user:', decoded.email || 'unknown');
         return decoded;
     } catch (error) {
+        console.error('Token verification failed:', error);
         return null;
     }
 };
@@ -563,11 +569,13 @@ const authOptions = {
                 }
                 const user = await authenticateCustomer(credentials.email, credentials.password);
                 if (user) {
+                    // Store the customerId in the user object to be used in the JWT callback
                     return {
                         id: user.customerId,
                         email: user.email,
                         name: user.name,
-                        role: user.role
+                        role: user.role,
+                        customerId: user.customerId // Add customerId explicitly
                     };
                 }
                 return null;
@@ -587,6 +595,9 @@ const authOptions = {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
+                token.email = user.email;
+                token.name = user.name;
+                token.customerId = user.customerId; // Store customerId in the token
             }
             return token;
         },
@@ -594,8 +605,33 @@ const authOptions = {
             if (session.user) {
                 session.user.id = token.id;
                 session.user.role = token.role;
+                session.user.customerId = token.customerId; // Add customerId to session
             }
             return session;
+        }
+    },
+    events: {
+        async signIn ({ user, account }) {
+            // When a user signs in, create a custom JWT token and set it as a cookie
+            if (user && user.customerId) {
+                try {
+                    // This will be executed on the server side
+                    const token = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["sign"])({
+                        email: user.email,
+                        name: user.name,
+                        role: 'customer',
+                        customerId: user.customerId
+                    }, process.env.JWT_SECRET || 'your-secret-key', {
+                        expiresIn: '1d'
+                    });
+                    // Note: We can't directly set cookies here as this runs on the server
+                    // The cookie will be set in a middleware or API route
+                    // We'll store this in the token to be used later
+                    console.log('Created custom JWT token for user:', user.email);
+                } catch (error) {
+                    console.error('Error creating custom JWT token:', error);
+                }
+            }
         }
     }
 };
@@ -702,22 +738,37 @@ async function getAllCustomers(filters = {}) {
 async function getCustomerById(id) {
     try {
         console.log(`Getting customer details for ID: ${id}`);
-        const client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+        // Get database client
+        let client;
+        try {
+            console.log('Connecting to Cassandra database...');
+            client = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2f$cassandra$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClient"])();
+            console.log('Database connection successful');
+        } catch (dbError) {
+            console.error('Database connection error:', dbError);
+            throw new Error('Database connection failed');
+        }
         // Attempt to convert ID to UUID
         let uuidId;
         try {
             uuidId = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$cassandra$2d$driver$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["types"].Uuid.fromString(id);
+            console.log('UUID conversion successful:', uuidId.toString());
         } catch (uuidError) {
             console.error(`Invalid UUID format for ID: ${id}`, uuidError);
             return null;
         }
         // Get customer personal details
+        console.log('Executing customer query with ID:', uuidId.toString());
         const customerQuery = 'SELECT * FROM customers WHERE id = ?';
         const customerResult = await client.execute(customerQuery, [
             uuidId
         ], {
             prepare: true
+        }).catch((err)=>{
+            console.error('Customer query execution error:', err);
+            throw new Error('Database query failed');
         });
+        console.log('Customer query result rows:', customerResult.rowLength);
         if (customerResult.rowLength === 0) {
             console.log(`No customer found in database with ID: ${id}`);
             return null;

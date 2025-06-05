@@ -70,6 +70,8 @@ export default function CustomerLoginPage() {
     setError(null);
     
     try {
+      console.log('Login: Attempting to sign in with credentials');
+      
       // Use NextAuth signIn function instead of direct API call
       const result = await signIn('credentials', {
         email: data.email,
@@ -78,16 +80,47 @@ export default function CustomerLoginPage() {
         callbackUrl: '/customer/dashboard'
       });
       
+      console.log('Login: NextAuth sign in result:', result?.error ? 'Error: ' + result.error : 'Success');
+      
       if (result?.error) {
         setError(result.error || 'Login failed');
         return;
+      }
+      
+      // After successful NextAuth login, also set the custom JWT token
+      console.log('Login: NextAuth login successful, setting custom JWT token');
+      
+      try {
+        // Call our custom login endpoint to set the JWT cookie
+        const customTokenResponse = await fetch('/api/customers/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password
+          })
+        });
+        
+        console.log('Login: Custom token API response status:', customTokenResponse.status);
+        
+        if (!customTokenResponse.ok) {
+          console.warn('Login: Failed to set custom JWT token, but NextAuth login succeeded');
+          // Continue anyway since NextAuth login succeeded
+        } else {
+          console.log('Login: Custom JWT token set successfully');
+        }
+      } catch (tokenErr) {
+        console.error('Login: Error setting custom JWT token:', tokenErr);
+        // Continue anyway since NextAuth login succeeded
       }
       
       // Redirect to customer dashboard on successful login
       router.replace('/customer/dashboard');
     } catch (err) {
       setError('An error occurred during login');
-      console.error(err);
+      console.error('Login: Error during login process:', err);
     } finally {
       setIsLoading(false);
     }

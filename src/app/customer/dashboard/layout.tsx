@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
-import { LogOut, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { LogoutButton } from '@/components/ui/logout-button';
 
 export default async function CustomerDashboardLayout({
   children,
@@ -53,13 +54,7 @@ export default async function CustomerDashboardLayout({
                   <FileText className="h-4 w-4" />
                   Requirements
                 </Link>
-                <Link
-                  href="/api/customers/auth/logout"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Link>
+                <LogoutButton />
               </nav>
             </div>
           </div>

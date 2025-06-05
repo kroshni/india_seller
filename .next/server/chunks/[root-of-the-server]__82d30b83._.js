@@ -320,6 +320,29 @@ async function initializeSchema() {
       PRIMARY KEY (customer_id, document_type)
     )
   `);
+    // Create customer_requirements table
+    await client.execute(`
+    CREATE TABLE IF NOT EXISTS customer_requirements (
+      id uuid,
+      customer_id text,
+      customer_name text,
+      product_name text,
+      details text,
+      email text,
+      status text,
+      created_at timestamp,
+      updated_at timestamp,
+      PRIMARY KEY (id)
+    )
+  `);
+    // Create index on customer_id for faster lookups
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (customer_id)
+  `);
+    // Create index on status for filtering
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (status)
+  `);
     // Create users table for authentication
     await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -1398,6 +1421,17 @@ async function GET(request) {
                 error: 'Unauthorized'
             }, {
                 status: 401
+            });
+        }
+        // If no query parameters are provided, just return the authenticated user info
+        // This is used by the Navbar component to check the user role
+        if (request.nextUrl.searchParams.size === 0) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                user: {
+                    email: user.email,
+                    name: user.name,
+                    role: user.role
+                }
             });
         }
         // Parse query parameters for filtering, pagination, and sorting
