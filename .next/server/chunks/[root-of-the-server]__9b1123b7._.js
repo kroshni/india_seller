@@ -320,6 +320,29 @@ async function initializeSchema() {
       PRIMARY KEY (customer_id, document_type)
     )
   `);
+    // Create customer_requirements table
+    await client.execute(`
+    CREATE TABLE IF NOT EXISTS customer_requirements (
+      id uuid,
+      customer_id text,
+      customer_name text,
+      product_name text,
+      details text,
+      email text,
+      status text,
+      created_at timestamp,
+      updated_at timestamp,
+      PRIMARY KEY (id)
+    )
+  `);
+    // Create index on customer_id for faster lookups
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (customer_id)
+  `);
+    // Create index on status for filtering
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (status)
+  `);
     // Create users table for authentication
     await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -356,6 +379,7 @@ __turbopack_context__.s({
     "authenticateCustomer": (()=>authenticateCustomer),
     "authenticateCustomerRequest": (()=>authenticateCustomerRequest),
     "authenticateRequest": (()=>authenticateRequest),
+    "authenticateSellerRequest": (()=>authenticateSellerRequest),
     "authenticateUser": (()=>authenticateUser),
     "createCustomerUser": (()=>createCustomerUser),
     "createUser": (()=>createUser),
@@ -528,6 +552,29 @@ const authenticateRequest = async (request)=>{
         const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, process.env.JWT_SECRET || 'your-secret-key');
         return decoded;
     } catch (error) {
+        return null;
+    }
+};
+const authenticateSellerRequest = async (request)=>{
+    const token = request.cookies.get('auth-token')?.value;
+    console.log('Seller auth check - Token exists:', !!token);
+    if (!token) {
+        console.log('Seller authentication failed: No token found');
+        return null;
+    }
+    try {
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        console.log('Verifying token with secret:', ("TURBOPACK compile-time truthy", 1) ? 'Secret exists' : ("TURBOPACK unreachable", undefined));
+        const decoded = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["verify"])(token, secret);
+        console.log('Token verified successfully, user:', decoded.email || 'unknown');
+        // Check if the user has the correct role (admin or seller)
+        if (decoded.role !== 'admin' && decoded.role !== 'seller') {
+            console.log('User does not have admin or seller role:', decoded.role);
+            return null;
+        }
+        return decoded;
+    } catch (error) {
+        console.error('Token verification failed:', error);
         return null;
     }
 };

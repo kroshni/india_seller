@@ -71,7 +71,7 @@ export default function FeaturedSellers() {
           // Fallback if no featured sellers in database
           console.log('No featured sellers found in database, using defaults');
           const defaultSellers = [
-            {
+            /* {
               id: 'seller-1',
               name: 'TechGadgets India (Demo)',
               email: 'contact@techgadgets.in',
@@ -130,7 +130,7 @@ export default function FeaturedSellers() {
               location: 'Chennai',
               createdAt: new Date(),
               updatedAt: new Date()
-            }
+            } */
           ];
           setSellers(defaultSellers);
           setUsingDemoData(true);

@@ -320,6 +320,29 @@ async function initializeSchema() {
       PRIMARY KEY (customer_id, document_type)
     )
   `);
+    // Create customer_requirements table
+    await client.execute(`
+    CREATE TABLE IF NOT EXISTS customer_requirements (
+      id uuid,
+      customer_id text,
+      customer_name text,
+      product_name text,
+      details text,
+      email text,
+      status text,
+      created_at timestamp,
+      updated_at timestamp,
+      PRIMARY KEY (id)
+    )
+  `);
+    // Create index on customer_id for faster lookups
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (customer_id)
+  `);
+    // Create index on status for filtering
+    await client.execute(`
+    CREATE INDEX IF NOT EXISTS ON customer_requirements (status)
+  `);
     // Create users table for authentication
     await client.execute(`
     CREATE TABLE IF NOT EXISTS users (

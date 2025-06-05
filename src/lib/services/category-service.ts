@@ -16,7 +16,7 @@ export type CategoryUpdateInput = Partial<Omit<Category, 'id' | 'createdAt' | 'u
 
 // In-memory storage for development - will be initialized from localStorage if available
 let mockCategories: Category[] = [
-  {
+  /* {
     id: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Electronics',
     slug: 'electronics',
@@ -65,7 +65,7 @@ let mockCategories: Category[] = [
     productCount: 65,
     createdAt: new Date(2023, 7, 12).toISOString(),
     updatedAt: new Date(2023, 7, 12).toISOString()
-  }
+  } */
 ];
 
 // Initialize mock data from localStorage if available

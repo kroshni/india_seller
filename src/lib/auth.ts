@@ -1,9 +1,7 @@
 import { getClient } from './db/cassandra';
-import { compare, hash } from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { hash, compare } from 'bcryptjs';
+import { sign, verify } from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
-import { verify, sign } from 'jsonwebtoken';
-import { types } from 'cassandra-driver';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
@@ -15,6 +13,10 @@ export interface User {
 
 export interface CustomerUser extends User {
   customerId: string;
+}
+
+export interface SellerUser extends User {
+  sellerId: string;
 }
 
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
@@ -154,6 +156,88 @@ export async function createCustomerUser(email: string, password: string, name: 
     };
   } catch (error) {
     console.error('Create customer user error:', error);
+    return null;
+  }
+}
+
+// Create a seller user account
+export async function createSellerUser(email: string, password: string, name: string, sellerId: string): Promise<SellerUser | null> {
+  try {
+    const client = await getClient();
+    
+    // Check if user already exists
+    const checkQuery = 'SELECT email FROM users WHERE email = ?';
+    const checkResult = await client.execute(checkQuery, [email], { prepare: true });
+    
+    if (checkResult.rowLength > 0) {
+      throw new Error('User already exists');
+    }
+    
+    const hashedPassword = await hash(password, 10);
+    const timestamp = new Date();
+    
+    const insertQuery = 'INSERT INTO users (email, password, name, role, created_at) VALUES (?, ?, ?, ?, ?)';
+    await client.execute(insertQuery, [email, hashedPassword, name, 'seller', timestamp], { prepare: true });
+    
+    return { 
+      email, 
+      name, 
+      role: 'seller',
+      sellerId 
+    };
+  } catch (error) {
+    console.error('Create seller user error:', error);
+    return null;
+  }
+}
+
+// Authenticate a seller with email and password
+export async function authenticateSeller(email: string, password: string): Promise<SellerUser | null> {
+  try {
+    const client = await getClient();
+    
+    // First check if the user exists and has the correct role
+    const userQuery = 'SELECT email, password, name, role FROM users WHERE email = ?';
+    const userResult = await client.execute(userQuery, [email], { prepare: true });
+    
+    if (userResult.rowLength === 0) return null;
+    
+    const user = userResult.first();
+    if (!user) return null;
+    if (user.role !== 'seller' && user.role !== 'admin') return null;
+
+    const isValidPassword = await compare(password, user.password);
+    if (!isValidPassword) return null;
+
+    // Find the associated seller record if the user is a seller
+    if (user.role === 'seller') {
+      const sellerQuery = 'SELECT id FROM sellers WHERE email = ? ALLOW FILTERING';
+      const sellerResult = await client.execute(sellerQuery, [email], { prepare: true });
+      
+      if (sellerResult.rowLength === 0) {
+        console.error('User exists but no matching seller record found');
+        return null;
+      }
+      
+      const sellerId = sellerResult.first().id.toString();
+      
+      return {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        sellerId
+      };
+    }
+    
+    // For admin users, we don't need a sellerId
+    return {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      sellerId: 'admin'
+    };
+  } catch (error) {
+    console.error('Seller authentication error:', error);
     return null;
   }
 }

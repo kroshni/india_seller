@@ -2009,58 +2009,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$local$2d$stora
 ;
 ;
 // In-memory storage for development - will be initialized from localStorage if available
-let mockCategories = [
-    {
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        name: 'Electronics',
-        slug: 'electronics',
-        description: 'Electronic devices and gadgets',
-        status: 'Active',
-        productCount: 42,
-        createdAt: new Date(2023, 6, 15).toISOString(),
-        updatedAt: new Date(2023, 6, 15).toISOString()
-    },
-    {
-        id: '550e8400-e29b-41d4-a716-446655440001',
-        name: 'Clothing',
-        slug: 'clothing',
-        description: 'Apparel and fashion items',
-        status: 'Active',
-        productCount: 128,
-        createdAt: new Date(2023, 5, 10).toISOString(),
-        updatedAt: new Date(2023, 7, 5).toISOString()
-    },
-    {
-        id: '550e8400-e29b-41d4-a716-446655440002',
-        name: 'Home & Kitchen',
-        slug: 'home-kitchen',
-        description: 'Home appliances and kitchen essentials',
-        status: 'Active',
-        productCount: 76,
-        createdAt: new Date(2023, 4, 22).toISOString(),
-        updatedAt: new Date(2023, 4, 22).toISOString()
-    },
-    {
-        id: '550e8400-e29b-41d4-a716-446655440003',
-        name: 'Books',
-        slug: 'books',
-        description: 'Books across all genres',
-        status: 'Inactive',
-        productCount: 210,
-        createdAt: new Date(2023, 3, 5).toISOString(),
-        updatedAt: new Date(2023, 8, 1).toISOString()
-    },
-    {
-        id: '550e8400-e29b-41d4-a716-446655440004',
-        name: 'Sports & Outdoors',
-        slug: 'sports-outdoors',
-        description: 'Sports equipment and outdoor gear',
-        status: 'Active',
-        productCount: 65,
-        createdAt: new Date(2023, 7, 12).toISOString(),
-        updatedAt: new Date(2023, 7, 12).toISOString()
-    }
-];
+let mockCategories = [];
 // Initialize mock data from localStorage if available
 if ("TURBOPACK compile-time truthy", 1) {
     const storedCategories = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$local$2d$storage$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["loadCategories"])();

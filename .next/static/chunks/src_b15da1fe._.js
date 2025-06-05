@@ -3397,68 +3397,7 @@ function FeaturedSellers() {
                         } else {
                             // Fallback if no featured sellers in database
                             console.log('No featured sellers found in database, using defaults');
-                            const defaultSellers = [
-                                {
-                                    id: 'seller-1',
-                                    name: 'TechGadgets India (Demo)',
-                                    email: 'contact@techgadgets.in',
-                                    phone: '+91 98765 43210',
-                                    logo: sellerLogos[0],
-                                    isTopScorer: 95,
-                                    kycStatus: 'Verified',
-                                    status: 'Active',
-                                    productCount: 127,
-                                    category: 'Electronics',
-                                    location: 'Delhi',
-                                    createdAt: new Date(),
-                                    updatedAt: new Date()
-                                },
-                                {
-                                    id: 'seller-2',
-                                    name: 'FashionHub (Demo)',
-                                    email: 'info@fashionhub.com',
-                                    phone: '+91 98765 43211',
-                                    logo: sellerLogos[1],
-                                    isTopScorer: 90,
-                                    kycStatus: 'Verified',
-                                    status: 'Active',
-                                    productCount: 234,
-                                    category: 'Clothing & Apparel',
-                                    location: 'Mumbai',
-                                    createdAt: new Date(),
-                                    updatedAt: new Date()
-                                },
-                                {
-                                    id: 'seller-3',
-                                    name: 'HomeDécor Plus (Demo)',
-                                    email: 'support@homedecor.in',
-                                    phone: '+91 98765 43212',
-                                    logo: sellerLogos[2],
-                                    isTopScorer: 85,
-                                    kycStatus: 'Verified',
-                                    status: 'Active',
-                                    productCount: 98,
-                                    category: 'Home & Garden',
-                                    location: 'Bangalore',
-                                    createdAt: new Date(),
-                                    updatedAt: new Date()
-                                },
-                                {
-                                    id: 'seller-4',
-                                    name: 'Wellness Store (Demo)',
-                                    email: 'care@wellness.co.in',
-                                    phone: '+91 98765 43213',
-                                    logo: sellerLogos[3],
-                                    isTopScorer: 80,
-                                    kycStatus: 'Verified',
-                                    status: 'Active',
-                                    productCount: 156,
-                                    category: 'Health & Wellness',
-                                    location: 'Chennai',
-                                    createdAt: new Date(),
-                                    updatedAt: new Date()
-                                }
-                            ];
+                            const defaultSellers = [];
                             setSellers(defaultSellers);
                             setUsingDemoData(true);
                             console.log('Displaying demo sellers:', defaultSellers.length);
