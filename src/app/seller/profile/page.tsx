@@ -41,6 +41,7 @@ interface SellerData {
     postalCode: string;
     country: string;
     isDefault: boolean;
+    image?: string;
   }>;
 }
 
@@ -55,6 +56,19 @@ interface ProfileFormData {
   ifscCode: string;
 }
 
+interface AddressFormData {
+  id?: string;
+  addressType: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  image?: string;
+}
+
 export default function SellerProfile() {
   const router = useRouter();
   const [user, setUser] = useState<SellerUser | null>(null);
@@ -64,8 +78,12 @@ export default function SellerProfile() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('personal');
+  const [addresses, setAddresses] = useState<AddressFormData[]>([]);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState<AddressFormData | null>(null);
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileFormData>();
+  const addressForm = useForm<AddressFormData>();
   
   useEffect(() => {
     async function checkAuthentication() {
@@ -115,6 +133,11 @@ export default function SellerProfile() {
         accountNumber: sellerData.business?.accountNumber || '',
         ifscCode: sellerData.business?.ifscCode || ''
       });
+      
+      // Set addresses
+      if (sellerData.addresses && sellerData.addresses.length > 0) {
+        setAddresses(sellerData.addresses);
+      }
     }
   }, [sellerData, reset]);
   
@@ -158,7 +181,8 @@ export default function SellerProfile() {
           bankName: data.bankName,
           accountNumber: data.accountNumber,
           ifscCode: data.ifscCode
-        }
+        },
+        addresses: addresses
       };
       
       const response = await fetch(`/api/sellers/${user.sellerId}`, {
@@ -188,6 +212,83 @@ export default function SellerProfile() {
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  const handleAddAddress = () => {
+    setIsEditingAddress(true);
+    setCurrentAddress({
+      addressType: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+      isDefault: false
+    });
+    addressForm.reset({
+      addressType: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+      isDefault: false
+    });
+  };
+  
+  const handleEditAddress = (address: AddressFormData) => {
+    setIsEditingAddress(true);
+    setCurrentAddress(address);
+    addressForm.reset({
+      addressType: address.addressType,
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2 || '',
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country,
+      isDefault: address.isDefault
+    });
+  };
+  
+  const handleDeleteAddress = (addressId?: string) => {
+    if (!addressId) return;
+    
+    setAddresses(addresses.filter(addr => addr.id !== addressId));
+    setSuccessMessage('Address deleted successfully');
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 3000);
+  };
+  
+  const handleSaveAddress = (data: AddressFormData) => {
+    if (currentAddress?.id) {
+      // Update existing address
+      setAddresses(addresses.map(addr => 
+        addr.id === currentAddress.id ? { ...data, id: currentAddress.id } : addr
+      ));
+    } else {
+      // Add new address with temporary ID (will be replaced by server-generated ID)
+      setAddresses([...addresses, { ...data, id: `temp-${Date.now()}` }]);
+    }
+    
+    setIsEditingAddress(false);
+    setCurrentAddress(null);
+    setSuccessMessage('Address saved successfully');
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 3000);
+  };
+  
+  const handleCancelEditAddress = () => {
+    setIsEditingAddress(false);
+    setCurrentAddress(null);
   };
   
   const handleLogout = async () => {
@@ -295,24 +396,30 @@ export default function SellerProfile() {
             <div className="bg-white shadow rounded-lg overflow-hidden">
               {/* Profile Tabs */}
               <div className="border-b border-gray-200">
-                <nav className="-mb-px flex" aria-label="Tabs">
+                <nav className="-mb-px flex flex-wrap" aria-label="Tabs">
                   <button
                     onClick={() => setActiveTab('personal')}
-                    className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'personal' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'personal' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                   >
-                    Personal Information
+                    Personal
                   </button>
                   <button
                     onClick={() => setActiveTab('business')}
-                    className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'business' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'business' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                   >
-                    Business Information
+                    Business
                   </button>
                   <button
                     onClick={() => setActiveTab('bank')}
-                    className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'bank' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'bank' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                   >
-                    Bank Details
+                    Bank
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('addresses')}
+                    className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'addresses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Addresses
                   </button>
                 </nav>
               </div>
@@ -331,7 +438,8 @@ export default function SellerProfile() {
                   </div>
                 )}
                 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {activeTab !== 'addresses' ? (
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   {/* Personal Information */}
                   {activeTab === 'personal' && (
                     <div className="space-y-4">
@@ -521,6 +629,240 @@ export default function SellerProfile() {
                     </button>
                   </div>
                 </form>
+                ) : (
+                  /* Addresses Tab */
+                  <div>
+                    {isEditingAddress ? (
+                      <form onSubmit={addressForm.handleSubmit(handleSaveAddress)} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label htmlFor="addressType" className="block text-sm font-medium text-gray-700">
+                              Address Type *
+                            </label>
+                            <select
+                              id="addressType"
+                              {...addressForm.register('addressType', { required: 'Address type is required' })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">Select Type</option>
+                              <option value="Business">Business</option>
+                              <option value="Factory">Factory</option>
+                              <option value="Warehouse">Warehouse</option>
+                              <option value="Office">Office</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            {addressForm.formState.errors.addressType && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.addressType.message}</p>
+                            )}
+                          </div>
+                          
+                          <div className="md:col-span-2">
+                            <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700">
+                              Address Line 1 *
+                            </label>
+                            <input
+                              id="addressLine1"
+                              type="text"
+                              {...addressForm.register('addressLine1', { required: 'Address line 1 is required' })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            {addressForm.formState.errors.addressLine1 && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.addressLine1.message}</p>
+                            )}
+                          </div>
+                          
+                          <div className="md:col-span-2">
+                            <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700">
+                              Address Line 2
+                            </label>
+                            <input
+                              id="addressLine2"
+                              type="text"
+                              {...addressForm.register('addressLine2')}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                              City *
+                            </label>
+                            <input
+                              id="city"
+                              type="text"
+                              {...addressForm.register('city', { required: 'City is required' })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            {addressForm.formState.errors.city && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.city.message}</p>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                              State *
+                            </label>
+                            <input
+                              id="state"
+                              type="text"
+                              {...addressForm.register('state', { required: 'State is required' })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            {addressForm.formState.errors.state && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.state.message}</p>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
+                              Postal Code *
+                            </label>
+                            <input
+                              id="postalCode"
+                              type="text"
+                              {...addressForm.register('postalCode', { 
+                                required: 'Postal code is required',
+                                pattern: {
+                                  value: /^[0-9]{6}$/,
+                                  message: 'Postal code must be 6 digits',
+                                }
+                              })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            {addressForm.formState.errors.postalCode && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.postalCode.message}</p>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                              Country *
+                            </label>
+                            <input
+                              id="country"
+                              type="text"
+                              {...addressForm.register('country', { required: 'Country is required' })}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            {addressForm.formState.errors.country && (
+                              <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.country.message}</p>
+                            )}
+                          </div>
+                          
+                          <div className="md:col-span-2">
+                            <div className="flex items-center">
+                              <input
+                                id="isDefault"
+                                type="checkbox"
+                                {...addressForm.register('isDefault')}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-700">
+                                Set as default address
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            type="button"
+                            onClick={handleCancelEditAddress}
+                            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            Save Address
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-medium text-gray-900">Your Addresses</h3>
+                          <button
+                            onClick={handleAddAddress}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <svg className="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                            </svg>
+                            Add Address
+                          </button>
+                        </div>
+                        
+                        {addresses.length === 0 ? (
+                          <div className="text-center py-8 bg-gray-50 rounded-lg">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <h3 className="mt-2 text-sm font-medium text-gray-900">No addresses</h3>
+                            <p className="mt-1 text-sm text-gray-500">Get started by adding a new address.</p>
+                            <div className="mt-6">
+                              <button
+                                onClick={handleAddAddress}
+                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              >
+                                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                </svg>
+                                Add Address
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {addresses.map((address) => (
+                              <div key={address.id} className="border rounded-lg p-4 relative">
+                                {address.isDefault && (
+                                  <span className="absolute top-2 right-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Default
+                                  </span>
+                                )}
+                                <div className="font-medium text-gray-900">{address.addressType}</div>
+                                <div className="text-gray-500 mt-1">
+                                  <div>{address.addressLine1}</div>
+                                  {address.addressLine2 && <div>{address.addressLine2}</div>}
+                                  <div>{address.city}, {address.state} {address.postalCode}</div>
+                                  <div>{address.country}</div>
+                                </div>
+                                <div className="mt-4 flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditAddress(address)}
+                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAddress(address.id)}
+                                    className="text-sm text-red-600 hover:text-red-800"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="mt-6 flex justify-end">
+                          <button
+                            onClick={handleSubmit(onSubmit)}
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            disabled={isSaving}
+                          >
+                            {isSaving ? 'Saving...' : 'Save All Changes'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,1 +1,20 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/seller/auth/check/route": "app/api/seller/auth/check/route.js",
+  "/api/seller/auth/login/route": "app/api/seller/auth/login/route.js",
+  "/api/seller/auth/logout/route": "app/api/seller/auth/logout/route.js",
+  "/api/sellers/[id]/products/route": "app/api/sellers/[id]/products/route.js",
+  "/api/sellers/[id]/route": "app/api/sellers/[id]/route.js",
+  "/api/sellers/featured/route": "app/api/sellers/featured/route.js",
+  "/api/sellers/route": "app/api/sellers/route.js",
+  "/dashboard/sellers/[id]/page": "app/dashboard/sellers/[id]/page.js",
+  "/dashboard/sellers/page": "app/dashboard/sellers/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/seller/dashboard/page": "app/seller/dashboard/page.js",
+  "/seller/documents/page": "app/seller/documents/page.js",
+  "/seller/login/page": "app/seller/login/page.js",
+  "/seller/products/page": "app/seller/products/page.js",
+  "/seller/profile/page": "app/seller/profile/page.js"
+}
